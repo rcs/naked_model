@@ -1,4 +1,4 @@
-class NakedRecord::Adapter::ActiveRecord::Object < NakedRecord::Adapter
+class NakedModel::Adapter::ActiveRecord::Object < NakedModel::Adapter
   include ActiveRecord
 
   def handles?(*chain)

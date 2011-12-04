@@ -1,6 +1,6 @@
 require 'addressable/uri'
-require File.dirname(__FILE__) + '/../naked_record'
-class NakedRecord
+require File.dirname(__FILE__) + '/../naked_model'
+class NakedModel
   class Adapter
     def call_proc(*chain)
       target,method,*remaining = chain

@@ -1,6 +1,6 @@
-class NakedRecord
+class NakedModel
   class Adapter
-    class Array < NakedRecord::Adapter
+    class Array < NakedModel::Adapter
       def handles?(*chain)
         t = chain.first
         t.is_a? Array

@@ -1,18 +1,18 @@
 require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 
-require 'naked_record'
+require 'naked_model'
 require 'multi_json'
 
 require_relative 'factory/ar'
 
-require 'naked_record/adapter/active_record'
+require 'naked_model/adapter/active_record'
 
 
-describe 'NakedRecord::Adapter::ActiveRecord::Collection' do
+describe 'NakedModel::Adapter::ActiveRecord::Collection' do
 
   before(:all) do
     artist = Factory(:prolific_artist)
-    @adapter = NakedRecord::Adapter::ActiveRecord::Collection.new
+    @adapter = NakedModel::Adapter::ActiveRecord::Collection.new
   end
 
   it 'Finds a base' do
@@ -48,7 +48,7 @@ describe 'NakedRecord::Adapter::ActiveRecord::Collection' do
   it 'Returns not found on a not-found model' do
     expect {
       @adapter.call_proc(Artist,'99999999')
-    }.to raise_error NakedRecord::RecordNotFound
+    }.to raise_error NakedModel::RecordNotFound
   end
 
   it "allows defined methods (like scope) on collections" do
@@ -63,10 +63,10 @@ describe 'NakedRecord::Adapter::ActiveRecord::Collection' do
   end
 end
 
-describe 'NakedRecord::Adapter::ActiveRecord::Object' do
+describe 'NakedModel::Adapter::ActiveRecord::Object' do
   before(:all) do
     @artist = Factory(:prolific_artist)
-    @adapter = NakedRecord::Adapter::ActiveRecord::Object.new
+    @adapter = NakedModel::Adapter::ActiveRecord::Object.new
   end
 
   it 'allows attributes' do

@@ -1,6 +1,6 @@
 require 'active_record'
 
-module NakedRecord::Adapter::ActiveRecord
+module NakedModel::Adapter::ActiveRecord
   require_relative 'active_record/object'
   require_relative 'active_record/collection'
 

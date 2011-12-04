@@ -1,4 +1,4 @@
-class NakedRecord
+class NakedModel
   class Adapter
     class ORM < Adapter
       attr_accessor :orm_classes

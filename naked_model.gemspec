@@ -1,17 +1,17 @@
 # -*- encoding: utf-8 -*-
 $:.push File.expand_path("../lib", __FILE__)
-require "naked_record/version"
+require "naked_model/version"
 
 Gem::Specification.new do |s|
-  s.name        = "naked_record"
-  s.version     = NakedRecord::VERSION
+  s.name        = "naked_model"
+  s.version     = NakedModel::VERSION
   s.authors     = ["Ryan Sorensen"]
   s.email       = ["rcsorensen@gmail.com"]
-  s.homepage    = "http://github.com/rcs/naked_record"
+  s.homepage    = "http://github.com/rcs/naked_model"
   s.summary     = %q{Turn active record classes into a RESTful Rack application}
-  s.description = %q{NakedRecord wraps a Ruby class for Rack use, translating HTTP semantics to Ruby method calls.}
+  s.description = %q{NakedModel wraps a Ruby class for Rack use, translating HTTP semantics to Ruby method calls.}
 
-  s.rubyforge_project = "naked_record"
+  s.rubyforge_project = "naked_model"
 
   s.files         = `git ls-files`.split("\n")
   s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")

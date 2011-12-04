@@ -1,7 +1,7 @@
 require 'mongo_mapper'
 require 'active_support'
 
-module NakedRecord::Adapter::MongoMapper
+module NakedModel::Adapter::MongoMapper
   require_relative 'mongo_mapper/object'
   require_relative 'mongo_mapper/collection'
 

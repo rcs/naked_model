@@ -1,6 +1,6 @@
-class NakedRecord
+class NakedModel
   class Adapter
-    class Hash < NakedRecord::Adapter
+    class Hash < NakedModel::Adapter
       def initialize(h)
         raise ArgumentError unless h.is_a? ::Hash
         @names = h
@@ -21,7 +21,7 @@ class NakedRecord
             :remaining => remaining
           }
         else
-          raise NakedRecord::RecordNotFound
+          raise NakedModel::RecordNotFound
         end
       end
     end

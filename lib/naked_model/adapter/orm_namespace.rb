@@ -1,4 +1,4 @@
-class NakedRecord
+class NakedModel
   module Adapter::OrmNamespace
     attr_accessor :orm_classes
     def find_base(name)

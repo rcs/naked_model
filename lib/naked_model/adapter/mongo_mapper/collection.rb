@@ -1,9 +1,9 @@
 require 'addressable/uri'
-require './lib/naked_record/adapter/orm_namespace'
+require './lib/naked_model/adapter/orm_namespace'
 
-class NakedRecord::Adapter::MongoMapper::Collection < NakedRecord::Adapter
+class NakedModel::Adapter::MongoMapper::Collection < NakedModel::Adapter
   include MongoMapper
-  include NakedRecord::Adapter::OrmNamespace
+  include NakedModel::Adapter::OrmNamespace
 
   WHITELIST = [:all, :count, :first, :last]
 
@@ -52,7 +52,7 @@ class NakedRecord::Adapter::MongoMapper::Collection < NakedRecord::Adapter
     rescue NoMethodError
       if /^[[:xdigit:]]+$/ === method
         res = target.find(method)
-        raise NakedRecord::RecordNotFound if res.nil?
+        raise NakedModel::RecordNotFound if res.nil?
         {:res => target.find(method), :remaining => remaining}
       else
         raise NoMethodError.new(method)

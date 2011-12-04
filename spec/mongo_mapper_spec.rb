@@ -1,11 +1,11 @@
 require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 
-require 'naked_record'
+require 'naked_model'
 require 'multi_json'
 
 require_relative 'factory/mm'
 
-require 'naked_record/adapter/mongo_mapper'
+require 'naked_model/adapter/mongo_mapper'
 
 def comp_plucky(a,b)
   a.criteria.should == b.criteria
@@ -13,11 +13,11 @@ def comp_plucky(a,b)
   a.options.should == b.options
 end
 
-describe 'NakedRecord::Adapter::MongoMapper::Collection' do
+describe 'NakedModel::Adapter::MongoMapper::Collection' do
 
   before(:all) do
     @author = Factory(:prolific_author)
-    @adapter = NakedRecord::Adapter::MongoMapper::Collection.new
+    @adapter = NakedModel::Adapter::MongoMapper::Collection.new
   end
 
   it 'Finds a base' do
@@ -52,7 +52,7 @@ describe 'NakedRecord::Adapter::MongoMapper::Collection' do
   it 'Returns not found on a not-found model' do
     expect {
       @adapter.call_proc(Author,'99999999')
-    }.to raise_error NakedRecord::RecordNotFound
+    }.to raise_error NakedModel::RecordNotFound
   end
 
 
@@ -85,11 +85,11 @@ describe 'NakedRecord::Adapter::MongoMapper::Collection' do
 
 end
 
-describe 'NakedRecord::Adapter::MongoMapper::Object' do
+describe 'NakedModel::Adapter::MongoMapper::Object' do
 
   before(:all) do
     @author = Factory(:prolific_author)
-    @adapter = NakedRecord::Adapter::MongoMapper::Object.new
+    @adapter = NakedModel::Adapter::MongoMapper::Object.new
   end
 
   it "handles instance objects" do

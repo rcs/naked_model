@@ -1,25 +1,25 @@
 require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 
 require 'rack/test'
-require 'naked_record'
-require 'naked_record/adapter/active_record'
-require 'naked_record/adapter/array'
-require 'naked_record/adapter/hash'
+require 'naked_model'
+require 'naked_model/adapter/active_record'
+require 'naked_model/adapter/array'
+require 'naked_model/adapter/hash'
 require 'multi_json'
 
 require File.expand_path(File.dirname(__FILE__) + '/factory/ar')
 
-describe NakedRecord do
+describe NakedModel do
   include Rack::Test::Methods
   it "instantiates" do
-    app = NakedRecord.new(:adapters => [NakedRecord::Adapter::Hash.new({})])
+    app = NakedModel.new(:adapters => [NakedModel::Adapter::Hash.new({})])
     app.should_not be_nil
   end
 
   def app
-    NakedRecord.new :adapters => [
-        NakedRecord::Adapter::Array.new,
-        NakedRecord::Adapter::Hash.new( 'hash' => { 'one' => 1, 'two' => 2, 'deep' => { 'deeper' => 3 } } ),
+    NakedModel.new :adapters => [
+        NakedModel::Adapter::Array.new,
+        NakedModel::Adapter::Hash.new( 'hash' => { 'one' => 1, 'two' => 2, 'deep' => { 'deeper' => 3 } } ),
       ]
   end
 

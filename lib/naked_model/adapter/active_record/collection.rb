@@ -1,7 +1,7 @@
-require './lib/naked_record/adapter/orm_namespace'
+require './lib/naked_model/adapter/orm_namespace'
 
-class NakedRecord::Adapter::ActiveRecord::Collection < NakedRecord::Adapter
-  include NakedRecord::Adapter::OrmNamespace
+class NakedModel::Adapter::ActiveRecord::Collection < NakedModel::Adapter
+  include NakedModel::Adapter::OrmNamespace
   include ActiveRecord
   WHITELIST = [:all, :count, :first, :last]
 
@@ -41,7 +41,7 @@ class NakedRecord::Adapter::ActiveRecord::Collection < NakedRecord::Adapter
         begin
           {:res => target.find(method), :remaining => remaining}
         rescue ::ActiveRecord::RecordNotFound
-          raise NakedRecord::RecordNotFound.new(method)
+          raise NakedModel::RecordNotFound.new(method)
         end
       else
         raise NoMethodError.new(method)

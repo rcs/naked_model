@@ -2,11 +2,11 @@ require 'rack'
 require 'multi_json'
 require 'addressable/uri'
 
-require_relative 'naked_record/adapter'
-require_relative 'naked_record/adapter/array'
-require_relative 'naked_record/adapter/hash'
+require_relative 'naked_model/adapter'
+require_relative 'naked_model/adapter/array'
+require_relative 'naked_model/adapter/hash'
 
-class NakedRecord
+class NakedModel
   class RecordNotFound < StandardError
   end
 
@@ -128,8 +128,8 @@ class NakedRecord
 
   def self.boring_instance
     self.new :adapters => [
-        NakedRecord::Adapter::Array.new,
-        NakedRecord::Adapter::Hash.new
+        NakedModel::Adapter::Array.new,
+        NakedModel::Adapter::Hash.new
       ]
   end
 end

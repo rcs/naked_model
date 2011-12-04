@@ -7,7 +7,7 @@ end if ENV['COVERAGE']
 $LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
 $LOAD_PATH.unshift(File.dirname(__FILE__))
 require 'rspec'
-require 'naked_record'
+require 'naked_model'
 
 # Requires supporting files with custom matchers and macros, etc,
 # in ./support/ and its subdirectories.

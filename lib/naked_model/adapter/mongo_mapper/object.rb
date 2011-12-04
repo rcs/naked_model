@@ -1,4 +1,4 @@
-class NakedRecord::Adapter::MongoMapper::Object < NakedRecord::Adapter
+class NakedModel::Adapter::MongoMapper::Object < NakedModel::Adapter
   include MongoMapper
 
   def handles?(*chain)
