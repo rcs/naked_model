@@ -1,0 +1,14 @@
+thriller:
+  id: 1
+  title: Thriller
+  artist_id: 1
+
+bad:
+  id: 2
+  title: Bad
+  artist_id: 1
+
+mmlp:
+  id: 3
+  title: The Marshall Mathers LP
+  artist_id: 2

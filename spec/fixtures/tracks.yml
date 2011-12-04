@@ -1,0 +1,29 @@
+beatit:
+  title: Beat It
+  cd_id: 1
+
+
+billiejean:
+  title: Billie Jean
+  cd_id: 1
+
+dirtydiana:
+  title: Dirty Diana
+  cd_id: 2
+
+smoothcriminal:
+  title: Smooth Criminal
+  cd_id: 2
+
+leavemealone:
+  title: Leave Me Alone
+  cd_id: 2
+
+stan:
+  title: Stan
+  cd_id: 3
+
+thewayiam:
+  title: The Way I Am
+  cd_id: 3
+
