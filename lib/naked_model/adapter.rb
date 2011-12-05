@@ -44,5 +44,9 @@ class NakedModel
       nil
     end
 
+    def all_names
+      []
+    end
+
   end
 end

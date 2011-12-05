@@ -1,0 +1,240 @@
+<html>
+  <head>
+    <title>NakedModel CRUD</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"></script>
+    <script src="/javascripts/json2.js"></script>
+    <script src="/javascripts/underscore.js"></script>
+    <script src="/javascripts/backbone.js"></script>
+    <script src="/javascripts/handlebars.js"></script>
+    <script src="/javascripts/coffee-script.js"></script>
+    <link rel="stylesheet" href="http://twitter.github.com/bootstrap/1.4.0/bootstrap.min.css">
+    <style type="text/css">
+      html, body {
+        background-color: #eee;
+      }
+      .container {
+        width: 820px;
+      }
+      .content {
+        background-color: #fff;
+        padding: 20px;
+        margin: 0 -20px; /* negative indent the amount of the padding to maintain the grid system */
+        -webkit-border-radius: 0 0 6px 6px;
+           -moz-border-radius: 0 0 6px 6px;
+                border-radius: 0 0 6px 6px;
+        -webkit-box-shadow: 0 1px 2px rgba(0,0,0,.15);
+           -moz-box-shadow: 0 1px 2px rgba(0,0,0,.15);
+                box-shadow: 0 1px 2px rgba(0,0,0,.15);
+      }
+      .page-header {
+        background-color: #f5f5f5;
+        padding: 20px 20px 10px;
+        margin: -20px -20px 20px;
+      }
+
+      .entity {
+        padding: 9px;
+        border: 1px solid #DDD;
+        border-radius: 6px;
+        box-shadow: 0 1px 2px rgba(0,0,0,.075)
+      }
+
+      .entity h2 small.json {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: inline-block;
+        max-width: 400;
+        height: 1em;
+      }
+
+
+     </style>
+  </head>
+<body>
+<div class="container">
+<div id="notice"></div>
+<div class="content">
+  <div class="page-header">
+    <h1>NakedModel CRUD <small>Full of Win</small></h1>
+  </div>
+
+<div id="app"></div>
+</div class="content">
+</div class="container">
+
+<script id="element_partial" type="text/x-handlebars-template">
+    <div class="entity">
+      <h2><span class="btn collapse-control">+</span> {{headline}} <small class="json">{{toJson entity}}</small></h2>
+        <div class="properties span12 columns" style="display: none">
+        <h3>Attributes</h3>
+        <table class="bordered-table zebra-striped">
+          <thead>
+            <tr>
+              <th>Attribute</th>
+              <th>Value</th>
+            </tr>
+          </thead>
+          {{#key_value entity except="^links$"}}
+          <tr>
+            <td class="attribute">{{key}}</td>
+            <td class="value">{{toJson value}}</td>
+          </tr>
+          {{/key_value}}
+        </table>
+
+        {{#if entity.links}}
+          <h3>Relationships</h3>
+          <table class="relationships bordered-table zebra-striped">
+          <thead>
+            <tr>
+              <th>Relation</th>
+              <th>Link</th>
+            </tr>
+          </thead>
+          {{#each entity.links}}
+          <tr>
+            <td class="attribute">{{rel}}</td>
+            <td class="value"><a href="{{href}}">{{href}}</a></td>
+          </tr>
+          {{/each}}
+          </table>
+        {{/if}}
+        </div class="properties">
+    </div class="entity">
+</script>
+<script id="response_view" type="text/x-handlebars-template">
+  <h2>{{title}}</h2>
+  {{> element_partial entity }}
+</script>
+<script id="response_collection_view" type="text/x-handlebars-template">
+  <h2>Collection:  {{title}}</h2>
+  {{#entity}}
+    {{> element_partial}}
+  {{/entity}}
+</script>
+<div id="object-thing">
+
+</div>
+<script type="text/javascript">
+
+Handlebars.registerHelper("debug", function(optionalValue) {
+  console.log("Current Context");
+  console.log("====================");
+  console.log(this);
+ 
+  if (optionalValue) {
+    console.log("Value");
+    console.log("====================");
+    console.log(optionalValue);
+  }
+});
+
+Handlebars.registerHelper("toJson", function(obj) {
+  return JSON.stringify(obj);
+});
+
+Handlebars.registerHelper("key_value", function(obj, block) {
+  var ret = "";
+  var except;
+  if( block.hash['except'] ) {
+    except = new RegExp(block.hash['except']);
+  }
+  _.each(obj,function(val,key) {
+    if( except && except.exec(key) ) {
+      return;
+    }
+    ret += block({key: key, value: val})
+  });
+  return ret;
+});
+
+Handlebars.registerPartial('element_partial', $('#element_partial').html());
+
+var Response = Backbone.Model.extend({
+  initialize: function(attr,options) {
+    this.url = options.url;
+  },
+  parse: function(resp,xhr) {
+    var title = _.keys(resp)[0];
+    var headline = resp[title]['title'] || resp[title]['name'] || resp[title]['id'];
+
+    if( _.isArray(resp[title]) ) {
+      var counter = 1;
+      entity = _.map(resp[title], function(entity) {
+        return {
+          entity: entity,
+          headline:  entity['title'] || entity['name'] || entity['id'] || 'entity ' + counter++,
+        }
+      });
+    }
+    else {
+      entity = {
+        entity: resp[title],
+        headline:  resp[title]['title'] || resp[title]['name'] || resp[title]['id'] || 'entity'
+      }
+    }
+
+
+    return {
+      entity: entity,
+      title: title
+    };
+  }
+
+});
+
+
+var ResponseView = Backbone.View.extend({
+  el: $('#app'),
+  render: function(model){
+    var js = model.toJSON();
+    var template;
+    if( _.isArray(js.entity) ) {
+      template = Handlebars.compile($("#response_collection_view").html());
+    } else {
+      template = Handlebars.compile($("#response_view").html());
+    }
+    $(this.el).html(template(js));
+
+
+    $(".entity > h2").click(function() {
+      if( $(this).closest(".entity").find(".properties").css("display") == "none" ){
+        $(this).closest(".entity").find(".properties").show('blind');
+        $(this).find(".collapse-control").html("-");
+      }
+      else {
+        $(this).closest(".entity").find(".properties").hide('blind');
+        $(this).find(".collapse-control").html("+");
+      }
+    });
+    $(".entity .properties").first().show();
+    $(".entity > h2 .collapse-control").first().html("-");
+
+    $(".relationships a").each(function() {
+      this.href = "#" + this.pathname;
+    });
+
+    return this;
+    }
+  });
+
+var AppRouter = Backbone.Router.extend({
+  routes: {
+    "*url" : "load_from_url"
+  },
+  load_from_url: function(url) {
+    var response = new Response({},{url: url});
+    response.fetch({success: function(model){view.render(model);}});
+  }
+});
+var router = new AppRouter
+
+
+var view = new ResponseView();
+
+Backbone.history.start();
+
+</script>
+</body>

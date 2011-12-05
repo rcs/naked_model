@@ -15,6 +15,15 @@ class NakedModel::Adapter::MongoMapper::Collection < NakedModel::Adapter
     collection_class(chain.first)
   end
 
+  def all_names
+    ::MongoMapper::Document.descendants.select { |a| orm_class? a.to_s }.map { |a|
+      {
+        :rel => a.to_s.underscore,
+        :href => ['/' , a.to_s.underscore]
+      }
+    }
+  end
+
   def collection_class(obj)
     return obj if obj.is_a? Class and obj < ::MongoMapper::Document
 

@@ -26,15 +26,20 @@ class NakedModel
     # Set up the method and parameters to call
     model_name, *args = extract_arguments(request)
 
+
     begin
-      # Find the root of our call tree
-      model = find_base(model_name)
+      if model_name
+        # Find the root of our call tree
+        model = find_base(model_name)
 
-      # Bail if we can't find a root
-      return [404, {'Content-Type' => 'text/plain'}, ["No index"]] if model.nil?
+        # Bail if we can't find a root
+        return [404, {'Content-Type' => 'text/plain'}, ["No index"]] if model.nil?
 
-      # Call the tree and recover from errors
-      body = display(call_methods(model,args),request)
+        # Call the tree and recover from errors
+        body = display(call_methods(model,args),request)
+      else # model_name
+        body = { 'root' => all_names(request) }
+      end
 
       body = { :val => body } unless body.is_a? Hash or body.is_a? Array
 
@@ -57,6 +62,10 @@ class NakedModel
       return model unless model.nil?
     end
     nil
+  end
+
+  def all_names(req)
+    replace_links({:links => adapters.map { |a| a.all_names }.flatten}, req.base_url + req.script_name, '')
   end
 
   def replace_links(hsh,root,relative)
