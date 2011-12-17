@@ -1,12 +1,14 @@
 require 'factory_girl'
 require 'active_record'
 
-ActiveRecord::Base.establish_connection(
+
+ActiveRecord::Base.configurations['ar'] = {
   :adapter => 'sqlite3',
-  :database => File.dirname(__FILE__) + "/test.sqlite3"
-)
+  :database => File.dirname(__FILE__) + "/ar_test.sqlite3"
+}
 
 
+ActiveRecord::Base.establish_connection(ActiveRecord::Base.configurations['ar'])
 ActiveRecord::Schema.define do
   create_table "artists", :force => true do |t|
     t.text     "name"
@@ -23,22 +25,26 @@ ActiveRecord::Schema.define do
   end
 end
 
-class Artist < ActiveRecord::Base
+class BaseSqlAr < ActiveRecord::Base
+  establish_connection 'ar'
+  self.abstract_class = true
+end
+
+class Artist < BaseSqlAr
   has_many :cds
 
   def llamas
     'truly rock'
   end
 end
-class Cd < ActiveRecord::Base
+class Cd < BaseSqlAr
   belongs_to :artist
   has_many :tracks
 end
-class Track < ActiveRecord::Base
+class Track < BaseSqlAr
   scope :including_one_in_title, where("title like '%1%'")
   belongs_to :cd
 end
-
 
 FactoryGirl.define do
   factory :artist do

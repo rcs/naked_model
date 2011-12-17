@@ -1,5 +1,5 @@
 class NakedModel::Adapter::ActiveRecord::Object < NakedModel::Adapter
-  include ActiveRecord
+  include NakedModel::Adapter::ActiveRecord
 
   def handles?(*chain)
     chain.first.class < ::ActiveRecord::Base

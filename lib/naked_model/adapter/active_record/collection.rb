@@ -1,8 +1,7 @@
-require './lib/naked_model/adapter/orm_namespace'
-
+require_relative '../orm_namespace'
 class NakedModel::Adapter::ActiveRecord::Collection < NakedModel::Adapter
   include NakedModel::Adapter::OrmNamespace
-  include ActiveRecord
+  include NakedModel::Adapter::ActiveRecord
   WHITELIST = [:all, :count, :first, :last]
 
   def initialize

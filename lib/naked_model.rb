@@ -27,10 +27,11 @@ class NakedModel
     model_name, *args = extract_arguments(request)
 
 
+
     begin
       if model_name
         # Find the root of our call tree
-        model = find_base(model_name)
+        model = find_base(model_name,request.env)
 
         # Bail if we can't find a root
         return [404, {'Content-Type' => 'text/plain'}, ["No index"]] if model.nil?
@@ -54,11 +55,11 @@ class NakedModel
     return [200, {'Content-Type' => 'application/json'}, [body.to_json]]
   end
 
-  def find_base(name)
+  def find_base(name,env)
     return nil if name.nil?
     # TODO aesthetics here are ugly. better control structure?
     adapters.each do |adapter|
-      model = adapter.find_base(name)
+      model = adapter.find_base(name,env)
       return model unless model.nil?
     end
     nil
@@ -94,7 +95,6 @@ class NakedModel
   def display(obj,req)
     adapters.each do |adapter|
       if( adapter.handles? obj )
-        puts "Displaying #{obj} with #{adapter}"
         return replace_links( adapter.display(obj),req.base_url + req.script_name,req.path_info)
       end
     end
@@ -107,6 +107,7 @@ class NakedModel
     res = nil
     adapters.each do |adapter|
       if( adapter.handles? obj )
+        debug("Calling #{adapter} with #{chain}")
         res = adapter.call_proc(obj,*chain)
         break
       end
@@ -123,9 +124,9 @@ class NakedModel
   def extract_arguments(req)
     method, *fixed = req.path_info.split('/').reject {|s| s.length == 0 }
 
-    if req.params.length > 0 then
-      fixed.push req.params
-    end
+    #if req.params.length > 0 then
+    #  fixed.push req.params
+    #end
 
     [method,*fixed]
   end
@@ -134,6 +135,8 @@ class NakedModel
   def log(*stuff)
     $stderr.puts stuff
   end
+
+  alias :debug :log
 
   def self.boring_instance
     self.new :adapters => [

@@ -21,11 +21,11 @@ describe 'NakedModel::Adapter::MongoMapper::Collection' do
   end
 
   it 'Finds a base' do
-    @adapter.find_base('Author').should == Author
+    @adapter.find_base('Author',{}).should == Author
   end
 
   it 'Doesnt respond to unknown names' do
-    @adapter.find_base('Notaclass').should be_nil
+    @adapter.find_base('Notaclass',{}).should be_nil
   end
 
   it "handles mm collections" do

@@ -5,7 +5,7 @@ class NakedModel
         raise ArgumentError unless h.is_a? ::Hash
         @names = h
       end
-      def find_base(name)
+      def find_base(name,env)
         return @names[name] if @names.has_key? name
         return nil
       end

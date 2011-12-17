@@ -16,6 +16,13 @@ describe NakedModel do
     app.should_not be_nil
   end
 
+  it "allows symbol names for adapters" do
+    app = NakedModel.new do |builder|
+      builder.adapter :hash
+    end
+    app.should_not be_nil
+  end
+
   def app
     NakedModel.new :adapters => [
         NakedModel::Adapter::Array.new,
@@ -48,6 +55,10 @@ describe NakedModel do
   end
   it 'returns 404 on a not-found model' do
     get '/hash/999999999999999'
+    last_response.status.should ==  404
+  end
+  it 'returns 404 on a not-found method' do
+    get '/hash/notamethod'
     last_response.status.should ==  404
   end
   it 'follows deep' do

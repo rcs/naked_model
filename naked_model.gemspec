@@ -34,6 +34,8 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'growl'
   s.add_development_dependency 'factory_girl'
 
+  s.add_development_dependency 'sqlite3'
+
   s.add_dependency 'rack'
   s.add_dependency 'addressable'
   s.add_dependency 'multi_json'

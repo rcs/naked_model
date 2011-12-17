@@ -1,5 +1,5 @@
 require 'addressable/uri'
-require './lib/naked_model/adapter/orm_namespace'
+require 'naked_model/adapter/orm_namespace'
 
 class NakedModel::Adapter::MongoMapper::Collection < NakedModel::Adapter
   include MongoMapper

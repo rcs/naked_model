@@ -40,12 +40,16 @@ class NakedModel
       true
     end
 
-    def find_base(name)
+    def find_base(name,env)
       nil
     end
 
     def all_names
       []
+    end
+
+    def handles?
+      nil
     end
 
   end

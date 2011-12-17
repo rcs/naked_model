@@ -6,7 +6,7 @@ class NakedModel
         @orm_classes = classes
         raise ArgumentError unless @orm_classes.length > 0
       end
-      def find_base(name)
+      def find_base(name,env)
         return nil unless orm_class? name.classify
         Kernel.const_get(name.classify)
       end

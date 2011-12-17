@@ -7,7 +7,7 @@ class NakedModel::Adapter::MongoMapper::Object < NakedModel::Adapter
 
   def display(obj)
     { obj.class.name.underscore =>
-        obj.as_json.merge( :links => [
+        obj.as_json.select { |k,v| interesting_fields(obj).include?(k.to_s) }.merge( :links => [
                               {
                                 :rel => 'self',
                                 :href => ['.']
@@ -21,6 +21,11 @@ class NakedModel::Adapter::MongoMapper::Object < NakedModel::Adapter
   def association_names(obj)
     klass = obj.class
     klass.associations.values.map { |m| m.name }
+  end
+
+  def interesting_fields(obj)
+    klass = obj.class
+    klass.column_names.reject{ |f| f.to_s.match /^_/ } - klass.associations.map { |k,v| v.options[:in] }.reject { |i| i.nil? }.map { |i| i.to_s }
   end
 
   def interesting_methods(obj)

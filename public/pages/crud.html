@@ -7,8 +7,7 @@
     <script src="/javascripts/underscore.js"></script>
     <script src="/javascripts/backbone.js"></script>
     <script src="/javascripts/handlebars.js"></script>
-    <script src="/javascripts/coffee-script.js"></script>
-    <link rel="stylesheet" href="http://twitter.github.com/bootstrap/1.4.0/bootstrap.min.css">
+    <link rel="stylesheet" href="/stylesheets/bootstrap.min.css">
     <style type="text/css">
       html, body {
         background-color: #eee;
@@ -229,7 +228,7 @@ var AppRouter = Backbone.Router.extend({
     response.fetch({success: function(model){view.render(model);}});
   }
 });
-var router = new AppRouter
+var router = new AppRouter();
 
 
 var view = new ResponseView();
