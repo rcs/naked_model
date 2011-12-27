@@ -11,16 +11,23 @@ class NakedModel::Adapter::MongoMapper::Collection < NakedModel::Adapter
     @orm_classes = [::MongoMapper::Document]
   end
 
+  def create(obj,args)
+    begin
+      obj.create!(args)
+    rescue ::MongoMapper::DocumentNotValid => e
+      raise NakedModel::DuplicateError.new e.message
+    end
+  end
+
   def handles?(*chain)
     collection_class(chain.first)
   end
 
   def all_names
     ::MongoMapper::Document.descendants.select { |a| orm_class? a.to_s }.map { |a|
-      {
-        :rel => a.to_s.underscore,
-        :href => ['/' , a.to_s.underscore]
-      }
+      [
+        { :rel => a.to_s.underscore, :href => ['/' , a.to_s.underscore] },
+      ]
     }
   end
 
@@ -42,15 +49,18 @@ class NakedModel::Adapter::MongoMapper::Collection < NakedModel::Adapter
   end
 
   def display(obj)
-    { collection_class(obj).name.tableize => obj.all.map do |a|
-      ::Hash[*short_fields.select { |n| a.respond_to? n.to_sym }.map { |n| [n, a.__send__(n.to_sym)] }.flatten].merge(
+
+    res = obj.all.map do |a|
+      # TODO NakedModel::display(obj)
+      a.as_json.merge(
       {
-        :links => [{
-          :rel => 'self',
-          :href => ['/' , a.class.to_s.underscore, a.id.to_s]
-        }]})
-      end
-    }
+        :links => [
+          { :rel => 'self', :href => ['/' , a.class.to_s.underscore, a.id.to_s] },
+          *association_names(a).map { |n| puts 'stuff'; {:rel => n, :href => ['/',a.class.to_s.underscore, a.id.to_s,n.to_s]}}
+        ]})
+    end
+
+    res
   end
 
   def call_proc(*chain)
@@ -71,7 +81,8 @@ class NakedModel::Adapter::MongoMapper::Collection < NakedModel::Adapter
 
   def interesting_methods(klass)
     klass = collection_class(klass)
-    (klass.public_methods - platonic_class(klass).public_methods).reject { |m| m.to_s.match /^(_|original_)/ } + WHITELIST
+    methods = (klass.public_methods - platonic_class(klass).public_methods).reject { |m| m.to_s.match /^(_|original_)/ } + WHITELIST
+    ::Hash[methods.map { |m| [m, klass.method(m)] }]
   end
 
 end

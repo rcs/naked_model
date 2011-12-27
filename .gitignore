@@ -21,5 +21,9 @@ doc/
 Gemfile.lock
 
 # test dbs
-spec/factory/test.sqlite3
+spec/factory/*.sqlite3
+
+
+.DS_Store
+
 

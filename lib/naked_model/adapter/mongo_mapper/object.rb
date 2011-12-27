@@ -5,8 +5,18 @@ class NakedModel::Adapter::MongoMapper::Object < NakedModel::Adapter
     chain.first.class < ::MongoMapper::Document
   end
 
+  def update(obj,args)
+    puts "Calling things"
+    begin
+      obj.update_attributes(args)
+      obj
+    rescue ::MongoMapper::DocumentNotValid => e
+      raise NakedModel::UpdateError.new e.message
+    end
+  end
+
   def display(obj)
-    { obj.class.name.underscore =>
+    #{ obj.class.name.underscore =>
         obj.as_json.select { |k,v| interesting_fields(obj).include?(k.to_s) }.merge( :links => [
                               {
                                 :rel => 'self',
@@ -15,12 +25,7 @@ class NakedModel::Adapter::MongoMapper::Object < NakedModel::Adapter
                               *association_names(obj).map { |n| {:rel => n, :href => ['.',n.to_s]}}
 
                             ] )
-    }
-  end
-
-  def association_names(obj)
-    klass = obj.class
-    klass.associations.values.map { |m| m.name }
+    #}
   end
 
   def interesting_fields(obj)
@@ -39,6 +44,6 @@ class NakedModel::Adapter::MongoMapper::Object < NakedModel::Adapter
 
     methods -= klass.const_get('MongoMapperKeys').public_instance_methods
     methods += klass.keys.values.map { |m| m.name.to_sym }
-    methods
+    ::Hash[methods.map { |m| [m,obj.method(m)] }]
   end
 end

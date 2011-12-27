@@ -62,6 +62,12 @@ describe "NakedModel::Adapter::ActiveRecord" do
         @adapter.call_proc(Artist, 'columns')
       }.to raise_error NoMethodError
     end
+
+    it "creates new users" do
+      artist = @adapter.create Artist, :name => 'Sloppy Joe'
+      artist.should_not be_nil
+      artist.persisted?.should == true
+    end
   end
 
   describe 'NakedModel::Adapter::ActiveRecord::Object' do

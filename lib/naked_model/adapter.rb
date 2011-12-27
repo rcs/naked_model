@@ -5,8 +5,19 @@ class NakedModel
     def call_proc(*chain)
       target,method,*remaining = chain
 
-      if interesting_methods(target).include? method.to_sym
-        {:res => target.__send__(method), :remaining => remaining}
+      interesting = interesting_methods(target);
+      if method_def = interesting_methods(target)[method.to_sym]
+        required = method_def.
+          parameters.
+          select { |p| p[0] == :req }.
+          length
+
+        raise ArgumentError, "Missing arguments" if required > remaining.length
+        parameters = remaining[0..required-1]
+        left_over = remaining[required..-1]
+        puts "p: #{parameters} lo: #{left_over}"
+
+        {:res => target.__send__(method.to_sym, *parameters), :remaining => left_over}
       else
         raise NoMethodError
       end
@@ -16,19 +27,8 @@ class NakedModel
       if obj.respond_to? :as_json
         obj = obj.as_json
       end
-      if obj.respond_to? :merge
-        obj.merge :links => [ { :rel => 'self', :href => ['.'] } ]
-      else
-        obj
-      end
-    end
 
-    def short_fields
-      %w{title name id}
-    end
-
-    def build_links(obj,url)
-      { :self => url.to_s }
+      obj.merge :links => [ { :rel => 'self', :href => ['.'] } ]
     end
 
     # Helper, for mapping 1 -> find(1) or [1]

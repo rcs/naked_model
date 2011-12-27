@@ -8,6 +8,10 @@ class NakedModel::Adapter::ActiveRecord::Collection < NakedModel::Adapter
     @orm_classes = [::ActiveRecord::Base]
   end
 
+  def create(obj,args)
+    obj.create(args)
+  end
+
   def handles?(*chain)
     t = chain.first
 
@@ -49,7 +53,8 @@ class NakedModel::Adapter::ActiveRecord::Collection < NakedModel::Adapter
   end
 
   def interesting_methods(klass)
-    (klass.public_methods - platonic_class(klass).public_methods).reject { |m| m.to_s.match /^(_|original_)/ }
+    methods = (klass.public_methods - platonic_class(klass).public_methods).reject { |m| m.to_s.match /^(_|original_)/ }
+    ::Hash[methods.map { |m| [m,klass.method(m)] }]
   end
 
 end

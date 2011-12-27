@@ -11,4 +11,9 @@ module NakedModel::Adapter::MongoMapper
     platonic
   end
 
+  def association_names(obj)
+    klass = obj.class
+    klass.associations.values.map { |m| m.name }
+  end
+
 end

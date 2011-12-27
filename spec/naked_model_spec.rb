@@ -17,6 +17,7 @@ describe NakedModel do
   end
 
   it "allows symbol names for adapters" do
+    pending "Builder initialization"
     app = NakedModel.new do |builder|
       builder.adapter :hash
     end
@@ -31,7 +32,6 @@ describe NakedModel do
   end
 
   before(:all) do
-    artist = Factory(:prolific_artist)
     @hash = { 'hash' => { 'one' => 1, 'two' => 2, 'deep' => { 'deeper' => 3 } } }
   end
 
@@ -73,5 +73,24 @@ describe NakedModel do
   it "responds to deep hash calls" do
     get '/hash/deep/deeper'
     MultiJson.decode(last_response.body).should == { "val" => 3 }
+  end
+
+  it "creates a new object with post" do
+    post '/hash', '{ "name": "llama", "llama": 1 }'
+    last_response.status.should == 201
+    get '/hash/llama'
+    MultiJson.decode(last_response.body).should == { "val" => 1 }
+  end
+  it "errors on a dupiicate" do
+    post '/hash', '{ "name": "llama", "llama": 1 }'
+    post '/hash', '{ "name": "llama", "llama": 1 }'
+    last_response.status.should == 409
+  end
+
+  it "updates a new object with put" do
+    put '/hash', '{ "color": "red" }'
+    last_response.status.should == 200
+    get '/hash/color'
+    MultiJson.decode(last_response.body).should == { "val" => 'red' }
   end
 end

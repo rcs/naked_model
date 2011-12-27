@@ -9,6 +9,10 @@ require_relative 'naked_model/adapter/hash'
 class NakedModel
   class RecordNotFound < StandardError
   end
+  class DuplicateError < StandardError
+  end
+  class UpdateError < StandardError
+  end
 
   attr_accessor :adapters
 
@@ -26,33 +30,54 @@ class NakedModel
     # Set up the method and parameters to call
     model_name, *args = extract_arguments(request)
 
+    if model_name
+      # Find the root of our call tree
+      model = find_base(model_name,request.env)
 
+      # Bail if we can't find a root
+      return [404, {'Content-Type' => 'text/plain'}, ["No index"]] if model.nil?
 
-    begin
-      if model_name
-        # Find the root of our call tree
-        model = find_base(model_name,request.env)
-
-        # Bail if we can't find a root
-        return [404, {'Content-Type' => 'text/plain'}, ["No index"]] if model.nil?
-
+      begin
         # Call the tree and recover from errors
-        body = display(call_methods(model,args),request)
-      else # model_name
-        body = { 'root' => all_names(request) }
+        obj = resolve_object(model,args)
+      rescue RecordNotFound
+        return [404, {'Content-Type' => 'text/plain'}, ["Not found: #{args.first}"]]
+      rescue NoMethodError => e
+        raise e
+        return [404, {'Content-Type' => 'text/plain'}, ["Not found: #{e.to_s}"]]
       end
 
-      body = { :val => body } unless body.is_a? Hash or body.is_a? Array
+      case request.request_method
+      when 'POST'
+        begin
+          body = display(create(obj,MultiJson.decode(request.body)),request)
+          status = 201
+        rescue DuplicateError => e
+          return [409, {'Content-Type' => 'text/plain'}, [e.message]]
+        end
+      when 'PUT'
+        begin
+          body = display(update(obj,MultiJson.decode(request.body)),request)
+          status = 200
+        rescue UpdateError
+          return [406, {'Content-Type' => 'text/plain'}, [e.message]]
+        end
+      when 'DELETE'
+        # TODO traverse back up the chain....
+      else
+        body = display(obj,request)
+        status = 200
+      end
 
-    rescue RecordNotFound
-      return [404, {'Content-Type' => 'text/plain'}, ["Not found: #{args.first}"]]
-    rescue NoMethodError => e
-      raise e
-      return [404, {'Content-Type' => 'text/plain'}, ["Not found: #{e.to_s}"]]
+    else # model_name
+      body = { 'root' => all_names(request) }
+      status = 200
     end
 
+    body = { :val => body } unless body.is_a? Hash or body.is_a? Array
+
     # The world's a beautiful place, acknowledge our success
-    return [200, {'Content-Type' => 'application/json'}, [body.to_json]]
+    return [status, {'Content-Type' => 'application/json'}, [body.to_json]]
   end
 
   def find_base(name,env)
@@ -69,22 +94,27 @@ class NakedModel
     replace_links({:links => adapters.map { |a| a.all_names }.flatten}, req.base_url + req.script_name, '')
   end
 
-  def replace_links(hsh,root,relative)
-    hsh.each do |k,v|
-      if k == :links
-        v.select { |v| v.is_a? ::Hash }.each do |ldi|
-          ldi[:href] = [case ldi[:href].first
-           when '.'
-             root + relative
-           when '/'
-             root
-           else
-             ldi[:href].first
-           end, *Array(ldi[:href][1..-1])].join '/'
+  def replace_links(obj,root,relative)
+
+    if obj.is_a? Array
+      obj.each { |e| replace_links(e,root,relative) }
+    elsif obj.is_a? Hash
+      obj.each do |k,v|
+        if k == :links
+          v.select { |v| v.is_a? ::Hash }.each do |ldi|
+            ldi[:href] = [case ldi[:href].first
+             when '.'
+               root + relative
+             when '/'
+               root
+             else
+               ldi[:href].first
+             end, *Array(ldi[:href][1..-1])].join '/'
+          end
+        else
+          replace_links(v,root,relative) if v.is_a? ::Hash
+          v.each { |e| replace_links(e,root,relative) } if v.is_a? ::Array
         end
-      else
-        replace_links(v,root,relative) if v.is_a? ::Hash
-        v.each { |e| replace_links(e,root,relative) } if v.is_a? ::Array
       end
     end
   end
@@ -98,10 +128,29 @@ class NakedModel
         return replace_links( adapter.display(obj),req.base_url + req.script_name,req.path_info)
       end
     end
+    # Fallback handler....
     obj
   end
 
-  def call_methods(obj, chain)
+  def create(obj,req)
+    adapters.each do |adapter|
+      if( adapter.handles? obj )
+        return adapter.create(obj,req)
+      end
+    end
+    raise NoMethodError
+  end
+
+  def update(obj,req)
+    adapters.each do |adapter|
+      if( adapter.handles? obj )
+        return adapter.update(obj,req)
+      end
+    end
+    raise NoMethodError
+  end
+
+  def resolve_object(obj, chain)
     return obj if chain.length < 1
 
     res = nil
@@ -117,7 +166,7 @@ class NakedModel
     raise NoMethodError if res.nil?
 
     # Stuff remaining, get 'er done
-    call_methods(res[:res],res[:remaining])
+    resolve_object(res[:res],res[:remaining])
   end
 
   # Take a Rack::Request and turn it into a method name and ruby-style argument list
