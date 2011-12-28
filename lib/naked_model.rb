@@ -18,8 +18,6 @@ class NakedModel
   end
   class UpdateError < StandardError
   end
-  class Response < Struct.new(:status, :body)
-  end
 
   attr_accessor :adapters
 

@@ -34,14 +34,21 @@ class NakedModel::Adapter::MongoMapper::Object < NakedModel::Adapter
   def interesting_methods(obj)
     # Columns defined on the object and all associations it has
     klass = obj.class
-    methods = (klass.public_instance_methods - platonic_class(klass).public_instance_methods).reject { |m| klass.attribute_method_matchers.any? { |match| match.match(m) } }
-    methods = methods.reject { |m| m.to_s.match /^(_|original_)/ }
 
-    methods -= klass.associations_module.public_instance_methods
-    methods += association_names(obj).map { |a| a.to_sym }
+    methods = defined_on_class(obj.class) +
+      association_names(obj).map { |a| a.to_sym } + # Associations
+      klass.keys.values.map { |m| m.name.to_sym }   # Fields
 
-    methods -= klass.const_get('MongoMapperKeys').public_instance_methods
-    methods += klass.keys.values.map { |m| m.name.to_sym }
+
     ::Hash[methods.map { |m| [m,obj.method(m)] }]
+  end
+
+  def defined_on_class(klass)
+    (klass.public_instance_methods -                               # Class responds to
+      platonic_class(klass).public_instance_methods -              # A class with the same ancestry responds to
+      klass.associations_module.public_instance_methods -          # Association helpers
+      klass.const_get('MongoMapperKeys').public_instance_methods). # Field helpers
+      reject { |m| klass.attribute_method_matchers.any? { |match| match.match(m) } }. # Generated for attributes defined on the class
+      reject { |m| m.to_s.match /^(_|original_)/ }                 # Methods not intended for public consumption, or moved out of the way for aliasing
   end
 end

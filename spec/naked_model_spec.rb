@@ -9,6 +9,43 @@ require 'multi_json'
 
 require File.expand_path(File.dirname(__FILE__) + '/factory/ar')
 
+stub_adapters = {
+  :not_found => { :error => NakedModel::RecordNotFound },
+  :no_method => { :error => NakedModel::NoMethodError },
+  :duplicate => { :error => NakedModel::DuplicateError },
+  :update => { :error => NakedModel::UpdateError },
+}
+
+stub_adapters.keys.each do |k|
+  stub_adapters[k][:class] = Class.new do
+    def call_proc(request)
+      raise stub_adapters[k][:error]
+    end
+  end
+end
+
+class NoMethodAdapter < NakedModel::Adapter
+  def call_proc(request)
+    raise NoMethodError
+  end
+end
+
+class NotFoundAdapter < NakedModel::Adapter
+  def call_proc(request)
+    raise RecordNotFound
+  end
+end
+
+class DuplicateAdapter < NakedModel::Adapter
+  def call_proc(request)
+    raise DuplicateError
+  end
+end
+
+
+
+
+
 describe NakedModel do
   include Rack::Test::Methods
   it "instantiates" do
@@ -44,6 +81,7 @@ describe NakedModel do
     get '/notaname'
     last_response.status.should == 404
   end
+
   it "returns an index on a listing page" do
     get '/hash'
     MultiJson.decode(last_response.body).should == @hash['hash'].merge( 'links' => [{ 'rel' => 'self', 'href' => 'http://example.org/hash' }] )

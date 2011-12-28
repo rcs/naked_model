@@ -25,13 +25,13 @@ describe "NakedModel::Adapter::ActiveRecord" do
     end
 
     it "handles AR collections" do
-      @adapter.handles?(Artist).should == true
+      @adapter.handles?(Artist).should be_true
     end
     it "handles AR proxies" do
-      @adapter.handles?(Artist.find(1).cds).should == true
+      @adapter.handles?(Artist.find(1).cds).should be_true
     end
     it "handles scopes" do
-      @adapter.handles?(Track.including_one_in_title).should == true
+      @adapter.handles?(Track.including_one_in_title).should be_true
     end
 
     it "doesn't handle instance objects" do

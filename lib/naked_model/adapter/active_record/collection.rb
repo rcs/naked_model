@@ -14,21 +14,27 @@ class NakedModel::Adapter::ActiveRecord::Collection < NakedModel::Adapter
   end
 
   def handles?(*chain)
-    t = chain.first
+    collection_class(chain.first)
+  end
 
-    if t.is_a? Class
-      klass = t
-    elsif t.is_a? ::ActiveRecord::Relation
-      klass = t.klass
+  def collection_class(obj)
+    if obj.is_a? Class
+      klass = obj
+    elsif obj.is_a? ::ActiveRecord::Relation
+      klass = obj.klass
     else
       begin
-        klass = t.proxy_association.reflection.klass
+        klass = obj.proxy_association.reflection.klass
       rescue NoMethodError
         return nil
       end
     end
 
-    klass < ::ActiveRecord::Base
+    if klass < ::ActiveRecord::Base
+      klass
+    else
+      nil
+    end
   end
 
   def display(obj)
@@ -49,11 +55,6 @@ class NakedModel::Adapter::ActiveRecord::Collection < NakedModel::Adapter
         raise e
       end
     end
-  end
-
-  def interesting_methods(klass)
-    methods = (klass.public_methods - platonic_class(klass).public_methods).reject { |m| m.to_s.match /^(_|original_)/ }
-    ::Hash[methods.map { |m| [m,klass.method(m)] }]
   end
 
 end
