@@ -5,11 +5,9 @@ class NakedModel::Adapter::MongoMapper::Object < NakedModel::Adapter
     chain.first.class < ::MongoMapper::Document
   end
 
-  def update(obj,args)
-    puts "Calling things"
+  def update(request)
     begin
-      obj.update_attributes(args)
-      obj
+      request.target.update_attributes(request.body)
     rescue ::MongoMapper::DocumentNotValid => e
       raise NakedModel::UpdateError.new e.message
     end

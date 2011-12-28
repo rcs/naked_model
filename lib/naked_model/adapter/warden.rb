@@ -1,13 +1,11 @@
 class NakedModel
   class Adapter::Warden < Adapter
-  def find_base(name,env)
-    if name == '~' and env['warden']
-      puts "FOUND IT"
-      env['warden'].user
+  def find_base(request)
+    if request.chain.first == '~' and request.env['warden']
+      return request.replace env['warden'].user
+    else
+      return nil
     end
-  end
-  def handles?(name)
-    name == "~"
   end
 
   def all_names

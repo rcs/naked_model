@@ -6,12 +6,67 @@ require_relative 'naked_model/adapter'
 require_relative 'naked_model/adapter/array'
 require_relative 'naked_model/adapter/hash'
 
+def Array::extract_options!
+  last.is_a?(::Hash) ? pop : {}
+end
+
 class NakedModel
   class RecordNotFound < StandardError
   end
   class DuplicateError < StandardError
   end
   class UpdateError < StandardError
+  end
+  class Request
+    ATTRIBUTES = [:chain,:request,:body,:status]
+    attr_accessor *ATTRIBUTES
+    def self.from_env(env)
+      request = Rack::Request.new(env)
+      self.new(
+        :request => request,
+        :chain => request.path_info.split('/').reject {|s| s.length == 0 },
+        :body => request.body.length > 0 ? MultiJson.decode(request.body) : nil,
+        :status => 200
+      )
+    end
+    def initialize(h)
+      self.request = h[:request]
+      self.chain = h[:chain] || []
+      self.body = h[:body] || nil
+      self.status = h[:status] || 200
+    end
+
+    # Helper method. Use to collapse the first chain elements into the result (default two, for [obj, 'method', others])
+    def next(obj,opt = {})
+      defaults = {:handled => 2}
+      opt = defaults.merge(opt)
+      defaults = {
+        :request => self.request, 
+        :chain => [obj,*self.chain[opt[:handled]..-1]], 
+        :body => self.body
+      }
+
+      self.class.new defaults.merge(opt)
+    end
+
+    def replace(obj)
+      self.next(obj,{:handled => 1})
+    end
+
+    # Helper methods
+    def target
+      chain.first
+    end
+
+    def method
+      chain[1]
+    end
+
+    def parameters
+      chain[2..-1]
+    end
+  end
+  class Response < Struct.new(:status, :body)
   end
 
   attr_accessor :adapters
@@ -24,74 +79,61 @@ class NakedModel
 
   # Interface for rack, called with the request environment
   def call(env)
-    request = Rack::Request.new(env)
-    url = Addressable::URI.parse(request.url)
+    request = Request.from_env(env)
 
-    # Set up the method and parameters to call
-    model_name, *args = extract_arguments(request)
+    # TODO special case on / -- all_names
+    request = find_namespace(request)
 
-    if model_name
-      # Find the root of our call tree
-      model = find_base(model_name,request.env)
+    # Bail if we can't find a root
+    return [404, {'Content-Type' => 'text/plain'}, ["No index"]] if request.nil?
 
-      # Bail if we can't find a root
-      return [404, {'Content-Type' => 'text/plain'}, ["No index"]] if model.nil?
-
-      begin
-        # Call the tree and recover from errors
-        obj = resolve_object(model,args)
-      rescue RecordNotFound
-        return [404, {'Content-Type' => 'text/plain'}, ["Not found: #{args.first}"]]
-      rescue NoMethodError => e
-        raise e
-        return [404, {'Content-Type' => 'text/plain'}, ["Not found: #{e.to_s}"]]
-      end
-
-      case request.request_method
-      when 'POST'
-        begin
-          body = display(create(obj,MultiJson.decode(request.body)),request)
-          status = 201
-        rescue DuplicateError => e
-          return [409, {'Content-Type' => 'text/plain'}, [e.message]]
-        end
-      when 'PUT'
-        begin
-          body = display(update(obj,MultiJson.decode(request.body)),request)
-          status = 200
-        rescue UpdateError
-          return [406, {'Content-Type' => 'text/plain'}, [e.message]]
-        end
-      when 'DELETE'
-        # TODO traverse back up the chain....
-      else
-        body = display(obj,request)
-        status = 200
-      end
-
-    else # model_name
-      body = { 'root' => all_names(request) }
-      status = 200
+    # Push pseuo-path arguments
+    # TODO wrap << in request
+    case request.request.request_method
+    when 'POST'
+      request.chain << 'create'
+    when 'PUT'
+      request.chain << 'update'
+    when 'DELETE'
+      # TODO traverse back up the chain....
     end
+
+
+    begin
+      # Call the tree and recover from errors
+      request = resolve_object request
+
+    rescue RecordNotFound
+      return [404, {'Content-Type' => 'text/plain'}, ["Not found: #{request.request.url}"]]
+    rescue NoMethodError => e
+      raise e
+      return [404, {'Content-Type' => 'text/plain'}, ["Not found: #{e.to_s}"]]
+    rescue DuplicateError => e
+      return [409, {'Content-Type' => 'text/plain'}, [e.message]]
+    rescue UpdateError
+      return [406, {'Content-Type' => 'text/plain'}, [e.message]]
+    end
+
+    body = display(request.target,request)
 
     body = { :val => body } unless body.is_a? Hash or body.is_a? Array
 
     # The world's a beautiful place, acknowledge our success
-    return [status, {'Content-Type' => 'application/json'}, [body.to_json]]
+    return [request.status, {'Content-Type' => 'application/json'}, [body.to_json]]
   end
 
-  def find_base(name,env)
-    return nil if name.nil?
+  def find_namespace(request)
+    return nil if request.chain.length < 1
     # TODO aesthetics here are ugly. better control structure?
     adapters.each do |adapter|
-      model = adapter.find_base(name,env)
+      model = adapter.find_base(request)
       return model unless model.nil?
     end
     nil
   end
 
   def all_names(req)
-    replace_links({:links => adapters.map { |a| a.all_names }.flatten}, req.base_url + req.script_name, '')
+    replace_links({:links => adapters.map { |a| a.all_names }.flatten}, req.request.base_url + req.request.script_name, '')
   end
 
   def replace_links(obj,root,relative)
@@ -119,65 +161,28 @@ class NakedModel
     end
   end
 
-  def invoke_adapters
-    # TODO stub
+  def invoke_adapters(method,request)
+    adapters.each do |adapter|
+      if adapter.handles? request.target
+        return adapter.__send__(method,request)
+      end
+    end
+    raise NoMethodError
   end
   def display(obj,req)
     adapters.each do |adapter|
       if( adapter.handles? obj )
-        return replace_links( adapter.display(obj),req.base_url + req.script_name,req.path_info)
+        return replace_links( adapter.display(obj),req.request.base_url + req.request.script_name,req.request.path_info)
       end
     end
     # Fallback handler....
     obj
   end
 
-  def create(obj,req)
-    adapters.each do |adapter|
-      if( adapter.handles? obj )
-        return adapter.create(obj,req)
-      end
-    end
-    raise NoMethodError
-  end
+  def resolve_object(request)
+    return request if request.chain.length < 2
 
-  def update(obj,req)
-    adapters.each do |adapter|
-      if( adapter.handles? obj )
-        return adapter.update(obj,req)
-      end
-    end
-    raise NoMethodError
-  end
-
-  def resolve_object(obj, chain)
-    return obj if chain.length < 1
-
-    res = nil
-    adapters.each do |adapter|
-      if( adapter.handles? obj )
-        debug("Calling #{adapter} with #{chain}")
-        res = adapter.call_proc(obj,*chain)
-        break
-      end
-    end
-
-    # Nothing handled it
-    raise NoMethodError if res.nil?
-
-    # Stuff remaining, get 'er done
-    resolve_object(res[:res],res[:remaining])
-  end
-
-  # Take a Rack::Request and turn it into a method name and ruby-style argument list
-  def extract_arguments(req)
-    method, *fixed = req.path_info.split('/').reject {|s| s.length == 0 }
-
-    #if req.params.length > 0 then
-    #  fixed.push req.params
-    #end
-
-    [method,*fixed]
+    resolve_object invoke_adapters(:call_proc, request)
   end
 
   # Helper method for my debugging

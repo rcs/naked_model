@@ -78,6 +78,7 @@ describe NakedModel do
   it "creates a new object with post" do
     post '/hash', '{ "name": "llama", "llama": 1 }'
     last_response.status.should == 201
+    $stderr.puts "CHECKING"
     get '/hash/llama'
     MultiJson.decode(last_response.body).should == { "val" => 1 }
   end

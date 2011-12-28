@@ -6,21 +6,20 @@ class NakedModel
         @names = h
       end
 
-      def update(obj,args)
-        obj.merge! args
+      def update(request)
+        request.target.merge! request.body
       end
 
-      def create(obj,args)
-        if obj.has_key? args['name']
+      def create(request)
+        if request.target.has_key? request.body['name']
           raise DuplicateError
         else
-          obj[args['name']] = args[args['name']]
+          request.target[request.body['name']] = request.body[request.body['name']]
         end
-        obj[args['name']]
       end
 
-      def find_base(name,env)
-        return @names[name] if @names.has_key? name
+      def find_base(request)
+        return request.replace(@names[request.chain.first]) if @names.has_key? request.chain.first
         return nil
       end
 
@@ -28,16 +27,15 @@ class NakedModel
         chain.first.is_a? ::Hash
       end
 
-      def call_proc(*chain)
-        obj, name, *remaining = chain
-
-        if obj.has_key? name
-          return {
-            :res => obj[name],
-            :remaining => remaining
-          }
-        else
-          raise NakedModel::RecordNotFound
+      def call_proc(request)
+        begin
+          super
+        rescue NoMethodError => e
+          if request.target.has_key? request.method
+            return request.next request.target[request.method]
+          else
+            raise NakedModel::RecordNotFound
+          end
         end
       end
     end

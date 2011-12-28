@@ -11,9 +11,9 @@ class NakedModel::Adapter::MongoMapper::Collection < NakedModel::Adapter
     @orm_classes = [::MongoMapper::Document]
   end
 
-  def create(obj,args)
+  def create(request)
     begin
-      obj.create!(args)
+      request.target.create(request.body)
     rescue ::MongoMapper::DocumentNotValid => e
       raise NakedModel::DuplicateError.new e.message
     end
@@ -63,18 +63,16 @@ class NakedModel::Adapter::MongoMapper::Collection < NakedModel::Adapter
     res
   end
 
-  def call_proc(*chain)
-    target,method,*remaining = chain
-
+  def call_proc(request)
     begin
       super
     rescue NoMethodError
-      if /^[[:xdigit:]]+$/ === method
-        res = target.find(method)
+      if /^[[:xdigit:]]+$/ === request.method
+        res = request.target.find(request.method)
         raise NakedModel::RecordNotFound if res.nil?
-        {:res => target.find(method), :remaining => remaining}
+        request.next res
       else
-        raise NoMethodError.new(method)
+        raise NoMethodError.new(request.method)
       end
     end
   end

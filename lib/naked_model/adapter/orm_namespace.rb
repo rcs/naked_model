@@ -1,9 +1,12 @@
 class NakedModel
   module Adapter::OrmNamespace
     attr_accessor :orm_classes
-    def find_base(name,env)
-      return nil unless orm_class? name.classify
-      Kernel.const_get(name.classify)
+    def find_base(request)
+      if orm_class? request.target.classify
+        thing =  request.replace Kernel.const_get(request.target.classify)
+        return thing
+      end
+      return nil
     end
 
     def orm_class?(klass)

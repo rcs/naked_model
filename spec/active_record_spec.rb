@@ -17,11 +17,11 @@ describe "NakedModel::Adapter::ActiveRecord" do
     end
 
     it 'Finds a base' do
-      @adapter.find_base('Artist',{}).should == Artist
+      @adapter.find_base(NakedModel::Request.new(:chain => ['Artist'])).chain.first == Artist
     end
 
     it 'Doesnt respond to unknown names' do
-      @adapter.find_base('Notaclass',{}).should be_nil
+      @adapter.find_base(NakedModel::Request.new(:chain => ['Notaclass'])).should be_nil
     end
 
     it "handles AR collections" do
@@ -43,28 +43,29 @@ describe "NakedModel::Adapter::ActiveRecord" do
     end
 
     it 'Converts numbers to find models' do
-      @adapter.call_proc(Artist,'1')[:res].should == Artist.find(1)
+      # TODO
+      @adapter.call_proc(NakedModel::Request.new(:chain => [Artist,'1'])).chain.first.should == Artist.find(1)
     end
 
     it 'Returns not found on a not-found model' do
       expect {
-        @adapter.call_proc(Artist,'99999999')
+        @adapter.call_proc(NakedModel::Request.new :chain => [Artist,'99999999'] )
       }.to raise_error NakedModel::RecordNotFound
     end
 
     it "allows defined methods (like scope) on collections" do
-      @adapter.call_proc(Track,'including_one_in_title')[:res].should == Track.including_one_in_title
+      @adapter.call_proc(NakedModel::Request.new(:chain => [Track,'including_one_in_title'])).chain.first.should == Track.including_one_in_title
     end
 
     it "ignores AR base methods" do
       Artist.method(:columns).should_not be_nil
       expect {
-        @adapter.call_proc(Artist, 'columns')
+        @adapter.call_proc(NakedModel::Request.new :chain => [Artist, 'columns'])
       }.to raise_error NoMethodError
     end
 
     it "creates new users" do
-      artist = @adapter.create Artist, :name => 'Sloppy Joe'
+      artist = @adapter.create NakedModel::Request.new :chain => [Artist], :body => {:name => 'Sloppy Joe'}
       artist.should_not be_nil
       artist.persisted?.should == true
     end
@@ -77,28 +78,28 @@ describe "NakedModel::Adapter::ActiveRecord" do
     end
 
     it 'allows attributes' do
-      @adapter.call_proc(@artist,'name')[:res].should == @artist.name
+      @adapter.call_proc(NakedModel::Request.new(:chain => [@artist,'name'])).chain.first.should == @artist.name
     end
 
     it 'allows associations' do
-      @adapter.call_proc(@artist,'cds')[:res].should == @artist.cds
+      @adapter.call_proc(NakedModel::Request.new(:chain => [@artist,'cds'])).chain.first.should == @artist.cds
     end
 
     it "allows defined methods on objects" do
-      @adapter.call_proc(@artist,'llamas')[:res].should == @artist.llamas
+      @adapter.call_proc(NakedModel::Request.new(:chain => [@artist,'llamas'])).chain.first.should == @artist.llamas
     end
 
     it "ignores generated non-read attribute methods" do
       @artist.method(:name_change).should_not be_nil
       expect {
-        @adapter.call_proc(@artist,'name_change')
+        @adapter.call_proc( NakedModel::Request.new :chain => [@artist,'name_change'] )
       }.to raise_error NoMethodError
     end
 
     it "ignores non-attribute, non-relation, non-local defined methods" do
       @artist.method(:destroy).should_not be_nil
       expect {
-        @adapter.call_proc(@artist,'destroy')
+        @adapter.call_proc(NakedModel::Request.new :chain => [@artist,'destroy'] )
       }.to raise_error NoMethodError
     end
   end

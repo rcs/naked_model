@@ -8,8 +8,8 @@ class NakedModel::Adapter::ActiveRecord::Collection < NakedModel::Adapter
     @orm_classes = [::ActiveRecord::Base]
   end
 
-  def create(obj,args)
-    obj.create(args)
+  def create(request)
+    request.target.create(request.body)
   end
 
   def handles?(*chain)
@@ -34,20 +34,18 @@ class NakedModel::Adapter::ActiveRecord::Collection < NakedModel::Adapter
     obj.all
   end
 
-  def call_proc(*chain)
-    target,method,*remaining = chain
-
+  def call_proc(request)
     begin
       super
-    rescue NoMethodError
-      if is_num? method
+    rescue NoMethodError => e
+      if is_num? request.method
         begin
-          {:res => target.find(method), :remaining => remaining}
+          request.next request.target.find(request.method) 
         rescue ::ActiveRecord::RecordNotFound
-          raise NakedModel::RecordNotFound.new(method)
+          raise NakedModel::RecordNotFound.new(request.method)
         end
       else
-        raise NoMethodError.new(method)
+        raise e
       end
     end
   end
