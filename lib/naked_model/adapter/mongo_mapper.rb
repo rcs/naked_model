@@ -1,4 +1,6 @@
 require 'mongo_mapper'
+
+# String methods
 require 'active_support'
 
 module NakedModel::Adapter::MongoMapper

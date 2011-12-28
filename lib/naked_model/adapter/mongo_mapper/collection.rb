@@ -1,11 +1,11 @@
 require 'addressable/uri'
 require 'naked_model/adapter/orm_namespace'
+require 'naked_model/adapter/active_model/collection'
 
 class NakedModel::Adapter::MongoMapper::Collection < NakedModel::Adapter
-  include MongoMapper
+  include NakedModel::Adapter::MongoMapper
   include NakedModel::Adapter::OrmNamespace
-
-  WHITELIST = [:all, :count, :first, :last]
+  include NakedModel::Adapter::ActiveModel::Collection
 
   def initialize
     @orm_classes = [::MongoMapper::Document]
@@ -56,7 +56,7 @@ class NakedModel::Adapter::MongoMapper::Collection < NakedModel::Adapter
       {
         :links => [
           { :rel => 'self', :href => ['/' , a.class.to_s.underscore, a.id.to_s] },
-          *association_names(a).map { |n| puts 'stuff'; {:rel => n, :href => ['/',a.class.to_s.underscore, a.id.to_s,n.to_s]}}
+          *association_names(a).map { |n| {:rel => n, :href => ['/',a.class.to_s.underscore, a.id.to_s,n.to_s]}}
         ]})
     end
 

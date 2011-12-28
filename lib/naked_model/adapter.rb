@@ -11,10 +11,9 @@ class NakedModel
           length
 
         raise ArgumentError, "Missing arguments" if required > request.parameters.length
-        parameters = request.parameters[0..required-1]
+        parameters = required > 0 ? request.parameters[0..required-1] : []
 
-        request.next request.target.__send__(request.method.to_sym, *parameters), :handled => required
-
+        request.next request.target.__send__(request.method.to_sym, *parameters), :handled => required + 2 # (target,method,params)
       elsif request.method == 'create'
         request.next create(request), :status => 201
       elsif request.method == 'update'

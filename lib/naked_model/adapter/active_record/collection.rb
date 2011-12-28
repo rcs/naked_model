@@ -1,8 +1,9 @@
 require_relative '../orm_namespace'
+require 'naked_model/adapter/active_model/collection'
 class NakedModel::Adapter::ActiveRecord::Collection < NakedModel::Adapter
   include NakedModel::Adapter::OrmNamespace
   include NakedModel::Adapter::ActiveRecord
-  WHITELIST = [:all, :count, :first, :last]
+  include NakedModel::Adapter::ActiveModel::Collection
 
   def initialize
     @orm_classes = [::ActiveRecord::Base]
