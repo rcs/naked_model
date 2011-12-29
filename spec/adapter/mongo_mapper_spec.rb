@@ -41,6 +41,10 @@ describe 'NakedModel::Adapter::MongoMapper::Collection' do
   it "doesn't handle instance objects" do
     @adapter.handles?(Author.first).should be_false
   end
+  it "doesn't handle non proxy arrays" do
+    @adapter.handles?([]).should be_false
+  end
+
 
   it "doesn't handle instance objects through relationships" do
     @adapter.handles?(Book.first.author).should be_false
@@ -85,6 +89,15 @@ describe 'NakedModel::Adapter::MongoMapper::Collection' do
       @adapter.call_proc(NakedModel::Request.new(:chain => [@author.books,'published'])).chain.first,
       @author.books.published
     )
+  end
+
+  it "creates new authors" do
+    artist = @adapter.create NakedModel::Request.new :chain => [Author], :body => {:name => 'Sloppy Joe'}
+    artist.should_not be_nil
+    artist.persisted?.should == true
+  end
+  it "errors on duplicates new authors" do
+    pending "Handle duplicates from mongo"
   end
 
 end

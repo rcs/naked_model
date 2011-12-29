@@ -1,6 +1,7 @@
 require File.expand_path(File.dirname(__FILE__) + '/../spec_helper')
 require 'naked_model'
 require 'naked_model/adapter/object'
+$stderr.puts "BOOOO"
 
 class SimpleObject
   attr_accessor :color

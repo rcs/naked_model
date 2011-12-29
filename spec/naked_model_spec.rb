@@ -12,7 +12,7 @@ require File.expand_path(File.dirname(__FILE__) + '/factory/ar')
 stub_adapters = {
   :not_found => { :error => NakedModel::RecordNotFound },
   :no_method => { :error => NakedModel::NoMethodError },
-  :duplicate => { :error => NakedModel::DuplicateError },
+  :create => { :error => NakedModel::CreateError },
   :update => { :error => NakedModel::UpdateError },
 }
 
@@ -36,9 +36,15 @@ class NotFoundAdapter < NakedModel::Adapter
   end
 end
 
-class DuplicateAdapter < NakedModel::Adapter
+class CreateFailAdapter < NakedModel::Adapter
   def call_proc(request)
-    raise DuplicateError
+    raise CreateError
+  end
+end
+
+class UpdateFailAdapter < NakedModel::Adapter
+  def call_proc(request)
+    raise UpdateError
   end
 end
 

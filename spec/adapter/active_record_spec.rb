@@ -77,6 +77,10 @@ describe "NakedModel::Adapter::ActiveRecord" do
       @adapter = NakedModel::Adapter::ActiveRecord::Object.new
     end
 
+    it 'handles AR objects' do
+      @adapter.handles?(Artist.find(1)).should be_true
+    end
+
     it 'allows attributes' do
       @adapter.call_proc(NakedModel::Request.new(:chain => [@artist,'name'])).chain.first.should == @artist.name
     end

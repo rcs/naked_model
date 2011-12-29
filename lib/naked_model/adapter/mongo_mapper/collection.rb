@@ -7,22 +7,26 @@ class NakedModel::Adapter::MongoMapper::Collection < NakedModel::Adapter
   include NakedModel::Adapter::OrmNamespace
   include NakedModel::Adapter::ActiveModel::Collection
 
+  # We'll care about `MongoMapper::Document` derived classes
   def initialize
     @orm_classes = [::MongoMapper::Document]
   end
 
+  # Create an object on the collection, raising `CreateError` with the message if it fails
   def create(request)
     begin
       request.target.create(request.body)
     rescue ::MongoMapper::DocumentNotValid => e
-      raise NakedModel::DuplicateError.new e.message
+      raise NakedModel::CreateError.new e.message
     end
   end
 
+  # We'll handle this class if it's a collection class we care about
   def handles?(*chain)
     collection_class(chain.first)
   end
 
+  # Return all MongoMapper derived class names loaded, with links to their endpoints
   def all_names
     ::MongoMapper::Document.descendants.select { |a| orm_class? a.to_s }.map { |a|
       [
@@ -31,12 +35,16 @@ class NakedModel::Adapter::MongoMapper::Collection < NakedModel::Adapter
     }
   end
 
+  # Return the MongoMapper::Document class underlying the object, or nil if it doesn't exist
   def collection_class(obj)
+    # Trivial case
     return obj if obj.is_a? Class and obj < ::MongoMapper::Document
 
+    # Plucky::Queries embed the underlying class as `.model`
     if obj.is_a? ::Plucky::Query
       obj.model
     elsif obj.is_a? ::Array
+      # Associations masquerade as an `Array` (author.books), so try to find the proxy_association's class
       begin
         obj.proxy_association.klass
       rescue NoMethodError
@@ -48,6 +56,7 @@ class NakedModel::Adapter::MongoMapper::Collection < NakedModel::Adapter
 
   end
 
+  # Return the elements in the collection, and their associations
   def display(obj)
 
     res = obj.all.map do |a|
@@ -63,10 +72,12 @@ class NakedModel::Adapter::MongoMapper::Collection < NakedModel::Adapter
     res
   end
 
+  # Call the base `Adapter` call_proc, trying to find the `method` as an id in the collection if it fails
   def call_proc(request)
     begin
       super
     rescue NoMethodError
+      # Mongo ids are hexadecimal
       if /^[[:xdigit:]]+$/ === request.method
         res = request.target.find(request.method)
         raise NakedModel::RecordNotFound if res.nil?
