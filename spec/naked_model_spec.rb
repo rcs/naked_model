@@ -11,7 +11,7 @@ require File.expand_path(File.dirname(__FILE__) + '/factory/ar')
 
 stub_adapters = {
   :not_found => { :error => NakedModel::RecordNotFound },
-  :no_method => { :error => NakedModel::NoMethodError },
+  :no_method => { :error => NoMethodError },
   :create => { :error => NakedModel::CreateError },
   :update => { :error => NakedModel::UpdateError },
 }

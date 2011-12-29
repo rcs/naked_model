@@ -1,6 +1,6 @@
 require File.expand_path(File.dirname(__FILE__) + '/../spec_helper')
 require 'naked_model'
-require 'naked_model/adapter/array'
+require 'naked_model/adapter/object'
 
 describe NakedModel::Adapter::Object do
   before :each do
