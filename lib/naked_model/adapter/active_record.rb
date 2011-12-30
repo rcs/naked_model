@@ -5,6 +5,7 @@ module NakedModel::Adapter::ActiveRecord
   # Load the collection and object adapters for AR
   require_relative 'active_record/object'
   require_relative 'active_record/collection'
+  require_relative 'active_model/collection'
 
   # Create a new anonymous class that mimics the ancestry hierarchy of `klass`
   def platonic_class(klass)

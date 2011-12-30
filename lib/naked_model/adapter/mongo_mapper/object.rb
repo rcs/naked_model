@@ -31,7 +31,10 @@ class NakedModel::Adapter::MongoMapper::Object < NakedModel::Adapter
   def interesting_fields(obj)
     klass = obj.class
 
-    klass.column_names.reject{ |f| f.to_s.match /^_/ } - klass.associations.values { |v| v.options[:in] }.reject { |i| i.nil? }.map { |i| i.to_s }
+    # Take column names not prefixed with _
+    klass.column_names.reject{ |f| f.to_s.match /^_/ } - 
+      # that aren't "utility" fields for storing associations (:in is mongo_mapper speak for a field containing ids
+      klass.associations.values { |v| v.options[:in] }.reject { |i| i.nil? }.map { |i| i.to_s }
   end
 
   def interesting_methods(obj)

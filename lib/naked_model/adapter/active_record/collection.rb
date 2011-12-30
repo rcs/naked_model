@@ -1,5 +1,5 @@
 require_relative '../orm_namespace'
-require 'naked_model/adapter/active_model/collection'
+require_relative '../active_model/collection'
 class NakedModel::Adapter::ActiveRecord::Collection < NakedModel::Adapter
   include NakedModel::Adapter::OrmNamespace
   include NakedModel::Adapter::ActiveRecord

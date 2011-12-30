@@ -1,9 +1,9 @@
 ### NakedModel::Request
 # A `NakedModel::Request` consists mainly of four things:
-# * `chain`: holds the remaining relationships to be processed ( '/one/two/three' => ['one','two','three'] )
-# * `request`: the original Rack request
-# * `body`: the body to be passed forward along the chain processing
-# * `status`: the processing status of the chain, used for constructing the eventual response
+# *   `chain`: holds the remaining relationships to be processed ( '/one/two/three' => ['one','two','three'] )
+# *   `request`: the original Rack request
+# *   `body`: the body to be passed forward along the chain processing
+# *   `status`: the processing status of the chain, used for constructing the eventual response
 class NakedModel::Request
   ATTRIBUTES = [:chain,:request,:body,:status]
   attr_accessor *ATTRIBUTES

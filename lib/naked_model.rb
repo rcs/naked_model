@@ -21,7 +21,7 @@ class NakedModel
   #### Public Interface
   # 
   # `NakedModel.new` takes an options hash, which currently cares about one thing:
-  # * `:adapters` specifies an array of adapters to route requests through
+  # *   `:adapters` specifies an array of adapters to route requests through
   #
   def initialize(options = {})
     self.adapters = options[:adapters]
