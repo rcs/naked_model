@@ -6,17 +6,22 @@ for Rack mounting. Specialized adapters for ActiveRecord, MongoMapper,
 and more are included.
 
 ## Quick Start
+Install the gem.
+
 ```shell
 $ gem install naked_model
 ```
 
-config.ru:
+In your config.ru:
+
 ```ruby
 require 'your_models.rb'
 require 'naked_model'
 
 run NakedModel.new( :adapters => :active_record )
 ```
+
+And run it.
 
 ```shell
 $ rackup
@@ -30,11 +35,9 @@ $ curl localhost:9292/model_class/1
 
 
 ## Example
-```shell
-$ gem install naked_model
-```
 
 config.ru:
+
 ```ruby
 require 'active_record'
 
@@ -65,9 +68,10 @@ end
 # And run NakedModel
 require 'naked_model'
 run NakedModel.new( :adapters => :active_record )
+```
+
 ```shell
 $ rackup
-[2011-12-29 21:47:38] INFO  WEBrick 1.3.1
 ```
 
 And we're off.
