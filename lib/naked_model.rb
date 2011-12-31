@@ -32,7 +32,6 @@ class NakedModel
   def call(env)
     # Create a NakedModel::Request from the environment
     request = Request.from_env(env)
-    $stderr.puts request.request.env
 
     if request.target.nil?
       return [200, {'Content-Type' => 'application/json'}, [all_names(request).to_json]]
