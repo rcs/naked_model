@@ -1,5 +1,5 @@
 # NakedModel
-You create awesome models, why bother with passthrough controllers?
+You create awesome models, why bother with writing yet another passthrough controller or twelve?
 
 NakedModel wraps up regular Ruby objects in a REST-ish interface, ready
 for Rack mounting. Specialized adapters for ActiveRecord, MongoMapper,
@@ -129,6 +129,7 @@ $ curl -s -d '{ "comment": "I love kitties." }' localhost:9292/topics/1/comments
 ```
 
 And let's see the results. Our topic:
+
 ```shell
 $ curl -s localhost:9292/topics/1 | pp_json
 {
@@ -148,6 +149,7 @@ $ curl -s localhost:9292/topics/1 | pp_json
 ```
 
 And the comments for it:
+
 ```shell
 $ curl -s localhost:9292/topics/1/comments | pp_json
 [
