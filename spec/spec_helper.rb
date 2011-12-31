@@ -12,6 +12,17 @@ def req_from_chain(*chain)
   NakedModel::Request.new :chain => chain
 end
 
+def basic_rack_env(h={})
+  {
+    'rack.url_scheme' => 'http',
+    'HTTP_HOST' => 'example.org:80',
+    'SCRIPT_NAME' => '',
+    'rack.input' => StringIO.new(''),
+    'rack.errors' => $stderr,
+    'CONTENT_LENGTH' => 0
+  }.merge(h)
+end
+
 # Requires supporting files with custom matchers and macros, etc,
 # in ./support/ and its subdirectories.
 Dir["#{File.dirname(__FILE__)}/support/**/*.rb"].each {|f| require f}

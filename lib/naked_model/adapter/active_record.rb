@@ -7,6 +7,7 @@ module NakedModel::Adapter::ActiveRecord
   require_relative 'active_record/collection'
   require_relative 'active_model/collection'
 
+  ActiveRecord::Base.include_root_in_json = false
   # Create a new anonymous class that mimics the ancestry hierarchy of `klass`
   def platonic_class(klass)
     platonic = Class.new(::ActiveRecord::Base)
@@ -20,5 +21,15 @@ module NakedModel::Adapter::ActiveRecord
     # TODO columns
 
     platonic
+  end
+
+  private
+  def ar_classes
+    classes = [ActiveRecord::Base]
+    begin # Handle transition to ActiveRecord::Model mixin capabilities
+      classes << Kernel.const_get('ActiveRecord::Model')
+    rescue NameError
+    end
+    classes
   end
 end

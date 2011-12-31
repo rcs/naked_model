@@ -16,12 +16,35 @@ end
 describe 'NakedModel::Adapter::MongoMapper::Collection' do
 
   before(:all) do
+    clear_database
     @author = Factory(:prolific_author)
     @adapter = NakedModel::Adapter::MongoMapper::Collection.new
   end
 
   it 'Finds a base' do
-    @adapter.find_base(NakedModel::Request.new(:chain => ['Author'])).chain.first.should == Author
+    @adapter.find_base(NakedModel::Request.new(:chain => ['Author'])).target.should == Author
+  end
+
+  it 'tells us the names registered' do
+    @adapter.all_names.should == [
+      {:rel=>"authors", :href=>[".", "author"]},
+      {:rel=>"books", :href=>[".", "book"]},
+      {:rel=>"desks", :href=>[".", "desk"]}
+    ]
+  end
+
+  it "displays a collection" do
+    @adapter.display(Author).should == [
+      {
+        "name" => Author.first.name,
+        "id" => Author.first.id,
+        :links => [
+          {:rel => 'self', :href => ['.',Author.first.id.to_s]},
+          {:rel => 'books', :href => ['.','books']},
+          {:rel => 'desk', :href => ['.','desk']},
+        ]
+      }
+    ]
   end
 
   it 'Doesnt respond to unknown names' do
@@ -51,7 +74,7 @@ describe 'NakedModel::Adapter::MongoMapper::Collection' do
   end
 
   it 'Converts hexes to find models' do
-    @adapter.call_proc(NakedModel::Request.new(:chain => [Author,@author.id.to_s])).chain.first.should == @author
+    @adapter.call_proc(NakedModel::Request.new(:chain => [Author,@author.id.to_s])).target.should == @author
   end
   it 'Returns not found on a not-found model' do
     expect {
@@ -62,7 +85,7 @@ describe 'NakedModel::Adapter::MongoMapper::Collection' do
 
   it "allows defined methods (like scope) on collections" do
     comp_plucky(
-      @adapter.call_proc(NakedModel::Request.new(:chain => [Book, 'published'])).chain.first,
+      @adapter.call_proc(NakedModel::Request.new(:chain => [Book, 'published'])).target,
       Book.published
     )
   end
@@ -79,32 +102,37 @@ describe 'NakedModel::Adapter::MongoMapper::Collection' do
         NakedModel::Request.new :chain => [
           @adapter.call_proc(NakedModel::Request.new :chain => [Book,'published']).target,
           'includes_6']
-      ).chain.first,
+      ).target,
       Book.published.includes_6
     )
   end
 
   it "allows defined methods (like scope) on scopes" do
     comp_plucky(
-      @adapter.call_proc(NakedModel::Request.new(:chain => [@author.books,'published'])).chain.first,
+      @adapter.call_proc(NakedModel::Request.new(:chain => [@author.books,'published'])).target,
       @author.books.published
     )
   end
 
   it "creates new authors" do
-    artist = @adapter.create NakedModel::Request.new :chain => [Author], :body => {:name => 'Sloppy Joe'}
-    artist.should_not be_nil
-    artist.persisted?.should == true
+    author = @adapter.create(NakedModel::Request.new :chain => [Author], :body => {:name => 'Sloppy Joe'}).target
+    author.should_not be_nil
+    author.persisted?.should == true
   end
-  it "errors on duplicates new authors" do
-    pending "Handle duplicates from mongo"
+
+  it "error on bad creates (duplicate name)" do
+    @adapter.create(NakedModel::Request.new :chain => [Author], :body => {:name => 'Hamburger Helper'})
+    expect {
+      @adapter.create(NakedModel::Request.new :chain => [Author], :body => {:name => 'Hamburger Helper'})
+    }.to raise_error NakedModel::CreateError
   end
 
 end
 
 describe 'NakedModel::Adapter::MongoMapper::Object' do
 
-  before(:all) do
+  before(:each) do
+    clear_database
     @author = Factory(:prolific_author)
     @adapter = NakedModel::Adapter::MongoMapper::Object.new
   end
@@ -117,15 +145,15 @@ describe 'NakedModel::Adapter::MongoMapper::Object' do
   end
 
   it 'allows attributes' do
-    @adapter.call_proc(NakedModel::Request.new(:chain => [@author,'name'])).chain.first.should == @author.name
+    @adapter.call_proc(NakedModel::Request.new(:chain => [@author,'name'])).target.should == @author.name
   end
 
   it 'allows associations' do
-    @adapter.call_proc(NakedModel::Request.new(:chain => [@author,'books'])).chain.first.should == @author.books
+    @adapter.call_proc(NakedModel::Request.new(:chain => [@author,'books'])).target.should == @author.books
   end
 
   it 'allows locally defined methods' do
-    @adapter.call_proc(NakedModel::Request.new(:chain => [@author,'do_books_rock'])).chain.first.should == @author.do_books_rock
+    @adapter.call_proc(NakedModel::Request.new(:chain => [@author,'do_books_rock'])).target.should == @author.do_books_rock
   end
 
 
@@ -143,5 +171,27 @@ describe 'NakedModel::Adapter::MongoMapper::Object' do
       @adapter.call_proc(NakedModel::Request.new :chain => [@author,'destroy'])
     }.to raise_error NoMethodError
   end
+
+  it "allows updates to author" do
+    @adapter.call_proc(NakedModel::Request.new( :chain => [@author,'update'], :body => { :name => 'John Doe' } ) ).target.name.should == 'John Doe'
+  end
+
+  it "aborts on validation failures (length on name)" do
+    expect {
+      @adapter.call_proc(NakedModel::Request.new( :chain => [@author,'update'], :body => { :name => '' } ) )
+    }.to raise_error NakedModel::UpdateError
+  end
+
+  it "displays objects correctly" do
+    @adapter.display(@author).should == {
+      'name' => @author.name,
+      :links => [
+        {:rel => 'self', :href => ['.']},
+        {:rel => 'books', :href => ['.', 'books']},
+        {:rel => 'desk', :href => ['.', 'desk']},
+      ]
+    }
+  end
+
 
 end

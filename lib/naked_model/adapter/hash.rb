@@ -14,12 +14,21 @@ class NakedModel
         request.target.merge! request.body
       end
 
+      def all_names
+        @names.keys.map { |k|
+          { :rel => k.to_s, :href => ['.', k.to_s] }
+        }
+      end
+
       # On `create`, we set the `body.name` key of the `target` to `body[name]`
       def create(request)
         # If the key already exists, bail
-        raise CreateError if request.target.has_key? request.body['name']
+        name = request.body['name']
+        raise CreateError if request.target.has_key? name
 
-        request.target[request.body['name']] = request.body[request.body['name']]
+        request.target[name] = request.body[name]
+
+        request.next request.target[name], :path => [name]
       end
 
       def find_base(request)

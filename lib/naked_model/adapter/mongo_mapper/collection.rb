@@ -1,4 +1,3 @@
-require 'addressable/uri'
 require 'naked_model/adapter/orm_namespace'
 require 'naked_model/adapter/active_model/collection'
 
@@ -15,7 +14,8 @@ class NakedModel::Adapter::MongoMapper::Collection < NakedModel::Adapter
   # Create an object on the collection, raising `CreateError` with the message if it fails
   def create(request)
     begin
-      request.target.create(request.body)
+      created = request.target.create!(request.body)
+      request.next created, :path => [created.id.to_s]
     rescue ::MongoMapper::DocumentNotValid => e
       raise NakedModel::CreateError.new e.message
     end
@@ -29,9 +29,7 @@ class NakedModel::Adapter::MongoMapper::Collection < NakedModel::Adapter
   # Return all MongoMapper derived class names loaded, with links to their endpoints
   def all_names
     ::MongoMapper::Document.descendants.select { |a| orm_class? a.to_s }.map { |a|
-      [
-        { :rel => a.to_s.underscore, :href => ['/' , a.to_s.underscore] },
-      ]
+        { :rel => a.to_s.underscore.pluralize, :href => ['.' , a.to_s.underscore] }
     }
   end
 
@@ -58,18 +56,15 @@ class NakedModel::Adapter::MongoMapper::Collection < NakedModel::Adapter
 
   # Return the elements in the collection, and their associations
   def display(obj)
-
-    res = obj.all.map do |a|
+    obj.all.map do |a|
       # TODO NakedModel::display(obj)
       a.as_json.merge(
       {
         :links => [
-          { :rel => 'self', :href => ['/' , a.class.to_s.underscore, a.id.to_s] },
-          *association_names(a).map { |n| {:rel => n, :href => ['/',a.class.to_s.underscore, a.id.to_s,n.to_s]}}
+          { :rel => 'self', :href => ['.', a.id.to_s] },
+          *association_names(a).map { |n| {:rel => n.to_s, :href => ['.',n.to_s]}}
         ]})
     end
-
-    res
   end
 
   # Call the base `Adapter` call_proc, trying to find the `method` as an id in the collection if it fails

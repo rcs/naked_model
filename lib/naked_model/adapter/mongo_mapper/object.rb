@@ -9,7 +9,8 @@ class NakedModel::Adapter::MongoMapper::Object < NakedModel::Adapter
   # Updat the object with parameters in `request.body`, raising `UpdateError` if validation fails
   def update(request)
     begin
-      request.target.update_attributes(request.body)
+      request.target.update_attributes!(request.body)
+      request.target
     rescue ::MongoMapper::DocumentNotValid => e
       raise NakedModel::UpdateError.new e.message
     end
@@ -22,7 +23,7 @@ class NakedModel::Adapter::MongoMapper::Object < NakedModel::Adapter
                               :rel => 'self',
                               :href => ['.']
                             },
-                            *association_names(obj).map { |n| {:rel => n, :href => ['.',n.to_s]}}
+                            *association_names(obj).map { |n| {:rel => n.to_s, :href => ['.',n.to_s]}}
 
                           ] )
   end

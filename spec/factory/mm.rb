@@ -10,7 +10,7 @@ class Author
     "yes"
   end
 
-  key :name
+  key :name, :length => {:minimum => 1}, :unique => true
 
   many :books
   one :desk
@@ -34,6 +34,12 @@ class Desk
   include MongoMapper::Document
 
   belongs_to :author
+end
+
+def clear_database
+  Author.delete_all
+  Book.delete_all
+  Desk.delete_all
 end
 
 FactoryGirl.define do

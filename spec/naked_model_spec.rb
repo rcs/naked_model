@@ -24,29 +24,6 @@ stub_adapters.keys.each do |k|
   end
 end
 
-class NoMethodAdapter < NakedModel::Adapter
-  def call_proc(request)
-    raise NoMethodError
-  end
-end
-
-class NotFoundAdapter < NakedModel::Adapter
-  def call_proc(request)
-    raise RecordNotFound
-  end
-end
-
-class CreateFailAdapter < NakedModel::Adapter
-  def call_proc(request)
-    raise CreateError
-  end
-end
-
-class UpdateFailAdapter < NakedModel::Adapter
-  def call_proc(request)
-    raise UpdateError
-  end
-end
 
 
 
@@ -78,9 +55,13 @@ describe NakedModel do
     @hash = { 'hash' => { 'one' => 1, 'two' => 2, 'deep' => { 'deeper' => 3 } } }
   end
 
-  it "responds to a basic request" do
+  it "responds to a listing request" do
     get '/'
-    last_response.body.should_not be_nil
+    MultiJson.decode(last_response.body).should == {
+      "links"=>[
+        {"rel"=>"hash", "href"=>"http://example.org/hash"}
+      ]
+    }
   end
 
   it "404s on a non-known name" do
@@ -136,5 +117,106 @@ describe NakedModel do
     last_response.status.should == 200
     get '/hash/color'
     MultiJson.decode(last_response.body).should == { "val" => 'red' }
+  end
+end
+
+describe "error handling" do
+  class NoMethodAdapter < NakedModel::Adapter
+    def handles?(*chain); true; end
+    def call_proc(request)
+      raise NoMethodError
+    end
+  end
+
+  class NotFoundAdapter < NakedModel::Adapter
+    def handles?(*chain); true; end
+    def call_proc(request)
+      raise NakedModel::RecordNotFound.new "Record Not Found"
+    end
+  end
+
+  class CreateFailAdapter < NakedModel::Adapter
+    def handles?(*chain); true; end
+    def call_proc(request)
+      raise NakedModel::CreateError.new "Create Failed"
+    end
+  end
+
+  class UpdateFailAdapter < NakedModel::Adapter
+    def handles?(*chain); true; end
+    def call_proc(request)
+      raise NakedModel::UpdateError.new "Update failed"
+    end
+  end
+
+  it "handles not having an adapter to serve a thing" do
+    browser = Rack::Test::Session.new(NakedModel.new( :adapters => [NakedModel::Adapter::Hash.new({'llama' => []})]))
+    browser.get '/llama/1'
+    browser.last_response.status.should == 404
+  end
+
+  it "handles NoMethod from adapters" do
+    browser = Rack::Test::Session.new(NakedModel.new( :adapters => [NoMethodAdapter.new,NakedModel::Adapter::Hash.new({'llama' => 1})]))
+    browser.get '/llama/humps'
+    browser.last_response.status.should == 404
+  end
+  it "handles NotFound from adapters" do
+    browser = Rack::Test::Session.new(NakedModel.new( :adapters => [NotFoundAdapter.new,NakedModel::Adapter::Hash.new({'llama' => 1})]))
+    browser.get '/llama/humps'
+    browser.last_response.status.should == 404
+  end
+  it "handles CreateError from adapters" do
+    browser = Rack::Test::Session.new(NakedModel.new( :adapters => [CreateFailAdapter.new,NakedModel::Adapter::Hash.new({'llama' => 1})]))
+    browser.get '/llama/humps'
+    browser.last_response.status.should == 409
+  end
+  it "handles UpdateError from adapters" do
+    browser = Rack::Test::Session.new(NakedModel.new( :adapters => [UpdateFailAdapter.new,NakedModel::Adapter::Hash.new({'llama' => 1})]))
+    browser.get '/llama/humps'
+    browser.last_response.status.should == 406
+  end
+end
+
+describe 'link replacement' do
+  before :all do
+    @nm = NakedModel.new :adapters => [NakedModel::Adapter.new]
+    @request = NakedModel::Request.from_env(basic_rack_env)
+    @request.path = ['context']
+  end
+  it "Joins on nothing arrays" do
+    @nm.rel_to_url(['a','b','c'],'root/context').should == 'a/b/c'
+  end
+
+  it "joins against context for '.'" do
+    @nm.rel_to_url(['.','a','b'],'root/context').should == 'root/context/a/b'
+  end
+
+  it "Finds :link keys in objects and replaces urls" do
+    @nm.replace_links({
+      :name => 'llama',
+      :links => [
+        {:rel => 'things', :href => ['.','b','c']}
+      ]
+    },@request).should == {
+      :name => 'llama',
+      :links => [
+        {:rel => 'things', :href => 'http://example.org/context/b/c'}
+      ]
+    }
+  end
+
+  it "sets context to self if it exists for replacement" do
+    @nm.replace_links({
+      :name => 'llama',
+      :links => [
+        {:rel => 'things', :href => ['.','c','d']},
+        {:rel => 'self', :href => ['.','a','b']},
+      ]}, @request).should == {
+        :name => 'llama',
+        :links => [
+          {:rel => 'things', :href => 'http://example.org/context/a/b/c/d'},
+          {:rel => 'self', :href => 'http://example.org/context/a/b'},
+        ]
+      }
   end
 end

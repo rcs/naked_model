@@ -1,6 +1,5 @@
 require 'rack'
 require 'multi_json'
-require 'addressable/uri'
 
 require_relative 'naked_model/adapter'
 require_relative 'naked_model/request'
@@ -33,6 +32,11 @@ class NakedModel
   def call(env)
     # Create a NakedModel::Request from the environment
     request = Request.from_env(env)
+    $stderr.puts request.request.env
+
+    if request.target.nil?
+      return [200, {'Content-Type' => 'application/json'}, [all_names(request).to_json]]
+    end
 
     # Find the base object. Turns a string into an object that subsequent resolving will be done against
     # TODO special case on / -- all_names
@@ -60,11 +64,10 @@ class NakedModel
     rescue RecordNotFound
       return [404, {'Content-Type' => 'text/plain'}, ["Not found: #{request.request.url}"]]
     rescue NoMethodError => e
-      raise e
       return [404, {'Content-Type' => 'text/plain'}, ["Not found: #{e.to_s}"]]
     rescue CreateError => e
       return [409, {'Content-Type' => 'text/plain'}, [e.message]]
-    rescue UpdateError
+    rescue UpdateError => e
       return [406, {'Content-Type' => 'text/plain'}, [e.message]]
     end
 
@@ -93,34 +96,49 @@ class NakedModel
 
   # Query all adapters for their names to give in an index, setting the root url to our root
   def all_names(req)
-    replace_links({:links => adapters.map { |a| a.all_names }.flatten}, req.request.base_url + req.request.script_name, '')
+    thing = replace_links({ :links => adapters.map { |a| a.all_names }.flatten}, req)
   end
 
 
   # Find obj[:links] elements and change their name paths to hrefs
-  def replace_links(obj,root,relative)
+  def replace_links(obj,request)
 
-    if obj.is_a? Array
-      obj.each { |e| replace_links(e,root,relative) }
-    elsif obj.is_a? Hash
-      obj.each do |k,v|
-        if k == :links
-          v.select { |v| v.is_a? ::Hash }.each do |ldi|
-            ldi[:href] = [case ldi[:href].first
-             when '.'
-               root + relative
-             when '/'
-               root
-             else
-               ldi[:href].first
-             end, *Array(ldi[:href][1..-1])].join '/'
-          end
-        else
-          replace_links(v,root,relative) if v.is_a? ::Hash
-          v.each { |e| replace_links(e,root,relative) } if v.is_a? ::Array
+    # Call this function  for each element if obj is an Array
+    return obj.map { |e| replace_links(e,request); e } if obj.is_a? Array
+
+    # Current scope is set to the root + relative url (SCRIPT_NAME + PATH_INFO) to start
+    current_scope = [request.request.base_url+request.request.script_name,*request.path].join('/')
+
+    if links = obj[:links]
+      # Deal with res => :self first, store its href as "current_scope"
+      if self_ref = links.select { |k| k[:rel] == 'self' }
+        self_ref.each do |r|
+          # Turn the href array into a url
+          r[:href] = rel_to_url(r[:href],current_scope)
+          current_scope = r[:href]
         end
       end
+
+      # rel_to_url each element except the self we did before
+      links.select { |k| k[:rel] != 'self' }.each do |r|
+        r[:href] = rel_to_url(r[:href],current_scope)
+      end
+
+      obj[:links] = links
     end
+    obj
+  end
+
+  # Turn an array of URL fragments into a URL string, replacing "." with the context
+  # TODO better calling conventions?
+  def rel_to_url(fragments,context)
+    fragments.each_with_index.map { |v,i|
+      if i == 0 and v == '.'
+        context
+      else
+        v
+      end
+    }.join '/'
   end
 
 
@@ -139,7 +157,7 @@ class NakedModel
   def display(obj,req)
     adapters.each do |adapter|
       if( adapter.handles? obj )
-        return replace_links( adapter.display(obj),req.request.base_url + req.request.script_name,req.request.path_info)
+        return replace_links( adapter.display(obj),req)
       end
     end
     # Fallback handler....
@@ -152,12 +170,5 @@ class NakedModel
     return request if request.chain.length < 2
     resolve_object invoke_adapters(:call_proc, request)
   end
-
-  # Helper method for debugging
-  def log(*stuff)
-    $stderr.puts stuff
-  end
-
-  alias :debug :log
 
 end

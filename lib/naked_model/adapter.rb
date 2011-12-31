@@ -1,9 +1,17 @@
-require 'addressable/uri'
 require File.dirname(__FILE__) + '/../naked_model'
 
 # The basic `Adapter` class, which can be inherited from for specialized adapters
 class NakedModel
   class Adapter
+
+    # Important methods to override in children:
+    # * `update`: called with the request when an update is performed
+    # * `create`: called with the request when an update is performed
+    # * `all_names`: queried to generate "index" pages
+    # * `display`: called to translate the target to something appropriate to serialize
+    # * `handles`: called to determine whether this adapter will handle the request
+    # * `interesting_methods`: used by the base `call_proc` to determine whether a method is available for calling
+    # * `find_base`: called to see whether the string coming in matches something your adapter cares about
 
     # `call_proc` is the workhorse method, taking a request returning a request one step closer to completion
     def call_proc(request)
@@ -26,7 +34,7 @@ class NakedModel
         request.next request.target.__send__(request.method.to_sym, *parameters), :handled => required + 2 # (target,method,params)
       elsif request.method == 'create'
         # Specal method request to proxy 'create' to the adapter and set the status for RESTish goodness
-        request.next create(request), :status => 201
+        create(request).tap { |o| o.status = 201 }
       elsif request.method == 'update'
         # Special method call to proxy 'update' to the adapter
         request.next update(request)
@@ -68,16 +76,6 @@ class NakedModel
     # Base adapter doesn't respnd to any methods 
     def interesting_methods(obj)
       {}
-    end
-
-    # Override in child class, will be called by call_proc for 'update'
-    def update(request)
-      raise NotImplementedError
-    end
-
-    # Override in child class, will be called by call_proc for 'create'
-    def create(request)
-      raise NotImplementedError
     end
 
     # Base adapter doesn't handle anything

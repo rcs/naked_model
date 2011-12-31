@@ -20,6 +20,19 @@ describe "NakedModel::Adapter::ActiveRecord" do
       @adapter.find_base(NakedModel::Request.new(:chain => ['Artist'])).chain.first == Artist
     end
 
+    it 'Displays the collection' do
+      @adapter.display(Artist).should == [
+        {
+          "id" => 1,
+          "name" => "Artist1",
+          :links => [
+            {:rel=>"self", :href=>[".", "1"]},
+            {:rel=>"cds",  :href=>[".", "cds"]}
+          ]
+        }
+      ]
+    end
+
     it 'Doesnt respond to unknown names' do
       @adapter.find_base(NakedModel::Request.new(:chain => ['Notaclass'])).should be_nil
     end
@@ -36,10 +49,6 @@ describe "NakedModel::Adapter::ActiveRecord" do
 
     it "doesn't handle instance objects" do
       @adapter.handles?(Artist.find(1)).should be_nil
-    end
-
-    it 'Delegates to all for classes' do
-      @adapter.display(Artist).should == Artist.all
     end
 
     it 'Converts numbers to find models' do
@@ -64,10 +73,17 @@ describe "NakedModel::Adapter::ActiveRecord" do
       }.to raise_error NoMethodError
     end
 
-    it "creates new users" do
-      artist = @adapter.create NakedModel::Request.new :chain => [Artist], :body => {:name => 'Sloppy Joe'}
+    it "creates new entities" do
+      artist = @adapter.call_proc(NakedModel::Request.new :chain => [Artist,'create'], :body => {:name => 'Sloppy Joe'}).target
       artist.should_not be_nil
       artist.persisted?.should == true
+    end
+
+    it "errors on creation fail" do
+      @adapter.call_proc(NakedModel::Request.new :chain => [Artist,'create'], :body => {:name => 'Hamburger Helper'})
+      expect {
+        @adapter.call_proc(NakedModel::Request.new :chain => [Artist,'create'], :body => {:name => 'Hamburger Helper'})
+      }.to raise_error NakedModel::CreateError
     end
   end
 
@@ -105,6 +121,27 @@ describe "NakedModel::Adapter::ActiveRecord" do
       expect {
         @adapter.call_proc(NakedModel::Request.new :chain => [@artist,'destroy'] )
       }.to raise_error NoMethodError
+    end
+
+    it "updates objects" do
+      @adapter.call_proc(NakedModel::Request.new( :chain => [@artist,'update'], :body => { :name => 'John Doe' } ) ).target.name.should == 'John Doe'
+    end
+
+    it "aborts on validation failures (length on name)" do
+      expect {
+        @adapter.call_proc(NakedModel::Request.new( :chain => [@artist,'update'], :body => { :name => '' } ) )
+      }.to raise_error NakedModel::UpdateError
+    end
+
+    it "displays an object" do
+      @adapter.display(@artist).should == {
+        "id" => @artist.id,
+        "name" => @artist.name,
+        :links => [
+          {:rel => 'self', :href => ['.']},
+          {:rel => 'cds', :href => ['.','cds']}
+        ]
+      }
     end
   end
 end

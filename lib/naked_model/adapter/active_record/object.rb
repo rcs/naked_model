@@ -3,7 +3,18 @@ class NakedModel::Adapter::ActiveRecord::Object < NakedModel::Adapter
 
   # We'll handle the object if it's an ActiveRecord::Base inherited object
   def handles?(*chain)
-    chain.first.class < ::ActiveRecord::Base
+    chain.first.class.ancestors & ar_classes
+
+  end
+  #
+  # Update the object with parameters in `request.body`, raising `UpdateError` if validation fails
+  def update(request)
+    begin
+      request.target.update_attributes!(request.body)
+      request.target
+    rescue ::ActiveRecord::RecordInvalid => e
+      raise NakedModel::UpdateError.new e.message
+    end
   end
 
   # Interesting methods are ones defined on the object's class, including associations and attributes, but not their helpers
@@ -28,5 +39,16 @@ class NakedModel::Adapter::ActiveRecord::Object < NakedModel::Adapter
         [m,obj.method(m)]
       }
     ]
+  end
+
+  def display(obj)
+      obj.as_json.merge( :links => [
+                            {
+                              :rel => 'self',
+                              :href => ['.']
+                            },
+                            *obj.class.reflect_on_all_associations.map { |m| {:rel => m.name.to_s, :href => ['.',m.name.to_s]}}
+
+                          ] )
   end
 end

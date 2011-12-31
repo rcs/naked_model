@@ -5,7 +5,7 @@
 # *   `body`: the body to be passed forward along the chain processing
 # *   `status`: the processing status of the chain, used for constructing the eventual response
 class NakedModel::Request
-  ATTRIBUTES = [:chain,:request,:body,:status]
+  ATTRIBUTES = [:chain,:request,:body,:status,:path]
   attr_accessor *ATTRIBUTES
 
   # Create a new `Request` from the environment from `Rack`
@@ -28,6 +28,7 @@ class NakedModel::Request
   def initialize(h)
     self.request = h[:request]
     self.chain = h[:chain] || []
+    self.path = h[:path] || []
     self.body = h[:body] || nil
     self.status = h[:status] || 200
   end
@@ -36,20 +37,24 @@ class NakedModel::Request
   # Return a new request object, collapsing the chain of `this` object into the new `target`
   # Defaults to the first two chain elements, but accepts an options hash with `:handled` set to the number of parameters to collapse
   def next(obj,opt = {})
-    defaults = {:handled => 2}
-    opt = defaults.merge(opt)
-    defaults = {
-      :request => self.request, 
-      :chain => [obj,*self.chain[opt[:handled]..-1]], 
-      :body => self.body
-    }
+    opt = {:handled => 2}.merge(opt)
 
-    self.class.new defaults.merge(opt)
+    self.class.new :request => request,
+      :chain => [obj,*chain[opt[:handled]..-1]],
+      :body => body,
+      :path => path + (opt[:path] || chain[1..opt[:handled]-1] )
+
   end
 
   # Helper method to create a new request object, only replacing the target
-  def replace(obj)
-    self.next(obj,{:handled => 1})
+  def replace(obj,opt = {})
+    self.class.new(
+      :request => request,
+      :chain => [obj,*chain[1..-1]],
+      :body => body,
+      :path => path + (opt[:path] || [chain[0]])
+    )
+
   end
 
   # Helper methods

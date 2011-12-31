@@ -5,11 +5,7 @@ require 'rack'
 
 describe NakedModel::Request do
   before :all do
-    @env = {
-      'rack.input' => StringIO.new(''),
-      'rack.errors' => $stderr,
-      'CONTENT_LENGTH' => 0
-    }
+    @env = basic_rack_env
   end
   before :each do
     @rr = Rack::Request.new(@env)

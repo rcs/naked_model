@@ -33,6 +33,9 @@ end
 class Artist < BaseSqlAr
   has_many :cds
 
+  validates_length_of :name, :minimum => 1
+  validates_uniqueness_of :name
+
   def llamas
     'truly rock'
   end

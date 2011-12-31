@@ -7,12 +7,17 @@ class NakedModel::Adapter::ActiveRecord::Collection < NakedModel::Adapter
 
   # The classes we care about inherit from `ActiveRecord::Base`
   def initialize
-    @orm_classes = [::ActiveRecord::Base]
+    @orm_classes = ar_classes
   end
 
   # Create a new object on the collection from the `request.body`
   def create(request)
-    request.target.create(request.body)
+    begin
+      created = request.target.create!(request.body)
+      request.next created, :path => [created.id.to_s]
+    rescue ::ActiveRecord::RecordInvalid => e
+      raise NakedModel::CreateError.new e
+    end
   end
 
   # We care about this object if it's a collection class we care about
@@ -34,7 +39,7 @@ class NakedModel::Adapter::ActiveRecord::Collection < NakedModel::Adapter
       end
     end
 
-    if klass < ::ActiveRecord::Base
+    if klass.ancestors & ar_classes
       klass
     else
       nil
@@ -43,7 +48,15 @@ class NakedModel::Adapter::ActiveRecord::Collection < NakedModel::Adapter
 
   # By default, we display all elements of the collection
   def display(obj)
-    obj.all
+    obj.all.map do |a|
+      # TODO NakedModel::display(obj)
+      a.as_json.merge(
+      {
+        :links => [
+          { :rel => 'self', :href => ['.', a.id.to_s] },
+          *a.class.reflect_on_all_associations.map { |m| {:rel => m.name.to_s, :href => ['.',m.name.to_s]}}
+        ]})
+    end
   end
 
   # Call base `Adapter` call_proc, trying to find the `method` as an id on the
