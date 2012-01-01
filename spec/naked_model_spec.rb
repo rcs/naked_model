@@ -122,28 +122,28 @@ end
 
 describe "error handling" do
   class NoMethodAdapter < NakedModel::Adapter
-    def handles?(*chain); true; end
+    def handles?(request); true; end
     def call_proc(request)
       raise NoMethodError
     end
   end
 
   class NotFoundAdapter < NakedModel::Adapter
-    def handles?(*chain); true; end
+    def handles?(request); true; end
     def call_proc(request)
       raise NakedModel::RecordNotFound.new "Record Not Found"
     end
   end
 
   class CreateFailAdapter < NakedModel::Adapter
-    def handles?(*chain); true; end
+    def handles?(request); true; end
     def call_proc(request)
       raise NakedModel::CreateError.new "Create Failed"
     end
   end
 
   class UpdateFailAdapter < NakedModel::Adapter
-    def handles?(*chain); true; end
+    def handles?(request); true; end
     def call_proc(request)
       raise NakedModel::UpdateError.new "Update failed"
     end

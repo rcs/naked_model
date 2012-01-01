@@ -3,7 +3,7 @@ class NakedModel
   class Adapter
     class Object < NakedModel::Adapter
       # Everything's an object in Ruby, so we handle it
-      def handles?(*chain)
+      def handles?(request)
         true
       end
 

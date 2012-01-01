@@ -79,7 +79,7 @@ class NakedModel
     end
 
     # Base adapter doesn't handle anything
-    def handles?
+    def handles?(request)
       nil
     end
 

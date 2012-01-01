@@ -145,7 +145,7 @@ class NakedModel
   # Call `method` on the first adapter that handles our `request.target`, raising `NoMethodError` if none do
   def invoke_adapters(method,request)
     adapters.each do |adapter|
-      if adapter.handles? request.target
+      if adapter.handles? request
         return adapter.__send__(method,request)
       end
     end
@@ -155,7 +155,7 @@ class NakedModel
   # Invoke the adapter that is willing to display our request, replacing links on the result
   def display(obj,req)
     adapters.each do |adapter|
-      if( adapter.handles? obj )
+      if( adapter.handles? req )
         return replace_links( adapter.display(obj),req)
       end
     end

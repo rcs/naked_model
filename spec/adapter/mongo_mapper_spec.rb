@@ -52,25 +52,25 @@ describe 'NakedModel::Adapter::MongoMapper::Collection' do
   end
 
   it "handles mm collections" do
-    @adapter.handles?(Author).should be_true
+    @adapter.handles?(req_from_chain(Author)).should be_true
   end
   it "handles mm relatiokns" do
-    @adapter.handles?(Author.first.books).should be_true
+    @adapter.handles?(req_from_chain(Author.first.books)).should be_true
   end
   it "handles scopes" do
-    @adapter.handles?(Book.published).should be_true
+    @adapter.handles?(req_from_chain(Book.published)).should be_true
   end
 
   it "doesn't handle instance objects" do
-    @adapter.handles?(Author.first).should be_false
+    @adapter.handles?(req_from_chain(Author.first)).should be_false
   end
   it "doesn't handle non proxy arrays" do
-    @adapter.handles?([]).should be_false
+    @adapter.handles?(req_from_chain([])).should be_false
   end
 
 
   it "doesn't handle instance objects through relationships" do
-    @adapter.handles?(Book.first.author).should be_false
+    @adapter.handles?(req_from_chain(Book.first.author)).should be_false
   end
 
   it 'Converts hexes to find models' do
@@ -138,10 +138,10 @@ describe 'NakedModel::Adapter::MongoMapper::Object' do
   end
 
   it "handles instance objects" do
-    @adapter.handles?(Book.first).should be_true
+    @adapter.handles?(req_from_chain(Book.first)).should be_true
   end
   it "handles instance objects through relationships" do
-    @adapter.handles?(Book.first.author).should be_true
+    @adapter.handles?(req_from_chain(Book.first.author)).should be_true
   end
 
   it 'allows attributes' do

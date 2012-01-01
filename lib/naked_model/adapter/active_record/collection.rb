@@ -21,8 +21,8 @@ class NakedModel::Adapter::ActiveRecord::Collection < NakedModel::Adapter
   end
 
   # We care about this object if it's a collection class we care about
-  def handles?(*chain)
-    collection_class(chain.first)
+  def handles?(request)
+    collection_class(request.target)
   end
 
   # Return the ActiveRecord inheriting class that underlies this `obj`, or nil if it doesn't exist

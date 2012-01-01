@@ -2,9 +2,8 @@ class NakedModel::Adapter::ActiveRecord::Object < NakedModel::Adapter
   include NakedModel::Adapter::ActiveRecord
 
   # We'll handle the object if it's an ActiveRecord::Base inherited object
-  def handles?(*chain)
-    chain.first.class.ancestors & ar_classes
-
+  def handles?(request)
+    request.target.class.ancestors & ar_classes
   end
   #
   # Update the object with parameters in `request.body`, raising `UpdateError` if validation fails

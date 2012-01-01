@@ -38,8 +38,8 @@ class NakedModel
       end
 
       # Handle `Hash` objects
-      def handles?(*chain)
-        chain.first.is_a? ::Hash
+      def handles?(request)
+        request.target.is_a? ::Hash
       end
 
       #  Call the base `Adapter` call_proc, trying to find the `method` as a key in the hash if not handled

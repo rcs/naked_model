@@ -3,8 +3,8 @@ class NakedModel
   class Adapter
     class Array < NakedModel::Adapter
       # Handle only Array objects
-      def handles?(*chain)
-        chain.first.is_a? ::Array
+      def handles?(request)
+        request.target.is_a? ::Array
       end
 
       # Return methods that can be called on the array, with their definitions

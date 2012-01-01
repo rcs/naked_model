@@ -46,7 +46,7 @@ describe NakedModel::Adapter::Object do
   end
 
   it "handles objects" do
-    @adapter.handles?(@s_o).should be_true
+    @adapter.handles?(req_from_chain(@s_o)).should be_true
   end
 
   it "handles accessors" do

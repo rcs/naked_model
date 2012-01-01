@@ -8,7 +8,7 @@ describe NakedModel::Adapter::Object do
   end
 
   it "handles arrays" do
-    @adapter.handles?([]).should be_true
+    @adapter.handles?(req_from_chain([])).should be_true
   end
 
   it "allows first" do

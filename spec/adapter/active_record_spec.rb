@@ -17,7 +17,7 @@ describe "NakedModel::Adapter::ActiveRecord" do
     end
 
     it 'Finds a base' do
-      @adapter.find_base(NakedModel::Request.new(:chain => ['Artist'])).chain.first == Artist
+      @adapter.find_base(NakedModel::Request.new(:chain => ['Artist'])).target == Artist
     end
 
     it 'Displays the collection' do
@@ -38,22 +38,22 @@ describe "NakedModel::Adapter::ActiveRecord" do
     end
 
     it "handles AR collections" do
-      @adapter.handles?(Artist).should be_true
+      @adapter.handles?(req_from_chain(Artist)).should be_true
     end
     it "handles AR proxies" do
-      @adapter.handles?(Artist.find(1).cds).should be_true
+      @adapter.handles?(req_from_chain(Artist.find(1).cds)).should be_true
     end
     it "handles scopes" do
-      @adapter.handles?(Track.including_one_in_title).should be_true
+      @adapter.handles?(req_from_chain(Track.including_one_in_title)).should be_true
     end
 
     it "doesn't handle instance objects" do
-      @adapter.handles?(Artist.find(1)).should be_nil
+      @adapter.handles?(req_from_chain(Artist.find(1))).should be_nil
     end
 
     it 'Converts numbers to find models' do
       # TODO
-      @adapter.call_proc(NakedModel::Request.new(:chain => [Artist,'1'])).chain.first.should == Artist.find(1)
+      @adapter.call_proc(NakedModel::Request.new(:chain => [Artist,'1'])).target.should == Artist.find(1)
     end
 
     it 'Returns not found on a not-found model' do
@@ -63,7 +63,7 @@ describe "NakedModel::Adapter::ActiveRecord" do
     end
 
     it "allows defined methods (like scope) on collections" do
-      @adapter.call_proc(NakedModel::Request.new(:chain => [Track,'including_one_in_title'])).chain.first.should == Track.including_one_in_title
+      @adapter.call_proc(NakedModel::Request.new(:chain => [Track,'including_one_in_title'])).target.should == Track.including_one_in_title
     end
 
     it "ignores AR base methods" do
@@ -94,19 +94,19 @@ describe "NakedModel::Adapter::ActiveRecord" do
     end
 
     it 'handles AR objects' do
-      @adapter.handles?(Artist.find(1)).should be_true
+      @adapter.handles?(req_from_chain(Artist.find(1))).should be_true
     end
 
     it 'allows attributes' do
-      @adapter.call_proc(NakedModel::Request.new(:chain => [@artist,'name'])).chain.first.should == @artist.name
+      @adapter.call_proc(NakedModel::Request.new(:chain => [@artist,'name'])).target.should == @artist.name
     end
 
     it 'allows associations' do
-      @adapter.call_proc(NakedModel::Request.new(:chain => [@artist,'cds'])).chain.first.should == @artist.cds
+      @adapter.call_proc(NakedModel::Request.new(:chain => [@artist,'cds'])).target.should == @artist.cds
     end
 
     it "allows defined methods on objects" do
-      @adapter.call_proc(NakedModel::Request.new(:chain => [@artist,'llamas'])).chain.first.should == @artist.llamas
+      @adapter.call_proc(NakedModel::Request.new(:chain => [@artist,'llamas'])).target.should == @artist.llamas
     end
 
     it "ignores generated non-read attribute methods" do

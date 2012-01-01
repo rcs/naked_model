@@ -22,8 +22,8 @@ class NakedModel::Adapter::MongoMapper::Collection < NakedModel::Adapter
   end
 
   # We'll handle this class if it's a collection class we care about
-  def handles?(*chain)
-    collection_class(chain.first)
+  def handles?(request)
+    collection_class(request.target)
   end
 
   # Return all MongoMapper derived class names loaded, with links to their endpoints

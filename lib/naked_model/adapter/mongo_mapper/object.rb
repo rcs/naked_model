@@ -2,8 +2,8 @@ class NakedModel::Adapter::MongoMapper::Object < NakedModel::Adapter
   include MongoMapper
 
   # Handle objects that are `Document` instances
-  def handles?(*chain)
-    chain.first.class < ::MongoMapper::Document
+  def handles?(request)
+    request.target.class < ::MongoMapper::Document
   end
 
   # Updat the object with parameters in `request.body`, raising `UpdateError` if validation fails
