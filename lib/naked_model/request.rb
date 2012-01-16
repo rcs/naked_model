@@ -5,11 +5,10 @@
 # *   `body`: the body to be passed forward along the chain processing
 # *   `status`: the processing status of the chain, used for constructing the eventual response
 class NakedModel::Request
-  ATTRIBUTES = [:chain,:request,:body,:status,:path]
-  attr_accessor *ATTRIBUTES
+  attr_accessor :chain,:request,:body,:status,:path,:namespace
 
   # Create a new `Request` from the environment from `Rack`
-  def self.from_env(env)
+  def self.from_env(env,namespace)
     request = Rack::Request.new(env)
     # Decode the body from JSON
     body = begin
@@ -22,7 +21,8 @@ class NakedModel::Request
       # Split the path_info into the chain that will be iterated on
       :chain => request.path_info.split('/').reject {|s| s.length == 0 },
       :body => body,
-      :status => 200
+      :status => 200,
+      :namespace => namespace
     )
   end
   def initialize(h)
@@ -31,6 +31,11 @@ class NakedModel::Request
     self.path = h[:path] || []
     self.body = h[:body] || nil
     self.status = h[:status] || 200
+    self.namespace = h[:namespace] or raise ArgumentError
+  end
+
+  def resolve
+    return chain[0] if chain.length < 1
   end
 
   # Helper method. Use to collapse the first chain elements into the result (default two, for [obj, 'method', others])
@@ -42,7 +47,8 @@ class NakedModel::Request
     self.class.new :request => request,
       :chain => [obj,*chain[opt[:handled]..-1]],
       :body => body,
-      :path => path + (opt[:path] || chain[1..opt[:handled]-1] )
+      :path => path + (opt[:path] || chain[1..opt[:handled]-1] ),
+      :namespace => opt[:namespace] || namespace
 
   end
 
@@ -52,9 +58,29 @@ class NakedModel::Request
       :request => request,
       :chain => [obj,*chain[1..-1]],
       :body => body,
-      :path => path + (opt[:path] || [chain[0]])
+      :path => path + (opt[:path] || [chain[0]]),
+      :namespace => namespace
     )
 
+  end
+
+  def full_path
+     request.base_url+request.script_name + request.path_info + path.join('/')
+  end
+
+  def add_path(fragment)
+    $stderr.puts "Path is #{path}, adding #{fragment}"
+    self.class.new(
+      :request => request,
+      :chain => chain,
+      :body => body,
+      :path => (path + [fragment]),
+      :namespace => namespace
+    )
+  end
+
+  def decorate(obj)
+    namespace.decorate(obj)
   end
 
   # Helper methods
