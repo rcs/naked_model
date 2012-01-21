@@ -6,11 +6,11 @@ class NakedModel::Decorator::ActiveRecord::Collection
 
   def as_json(request)
     {
-      collection.model_name.tableize => collection.all.map do |a|
-        request.decorate(a).as_json(request.add_path(a.id).full_path)
+      'TODO' => collection.all.map do |a|
+        request.decorate(a).as_json(request.add_path(a.id))
       end,
       :links => [
-        defined_on_collection.map do |relation|
+        *defined_on_collection.map do |relation|
           {:rel => relation, :href => request.add_path(relation).full_path }
         end,
         {:rel => 'self', :href => request.full_path}
@@ -20,7 +20,8 @@ class NakedModel::Decorator::ActiveRecord::Collection
 
   def rel(relation)
     if defined_on_collection.include? relation
-      collection.method(relation.to_sym).to_proc.curry[]
+      arity = collection_class.method(relation.to_sym).arity
+      Proc.new { |args| collection.__send__ relation.to_sym }.curry(arity)[]
     else
       # Try to find this as an id in the collection
       begin
@@ -40,11 +41,36 @@ class NakedModel::Decorator::ActiveRecord::Collection
     end
   end
 
+  def self.collection_class obj
+    if obj.is_a? Class
+      klass = obj
+    elsif obj.is_a? ::ActiveRecord::Relation
+      klass = obj.klass
+    else
+      begin
+        klass = obj.proxy_association.reflection.klass
+      rescue NoMethodError
+        return nil
+      end
+    end
+
+    if klass <  ActiveRecord::Base
+      klass
+    else
+      nil
+    end
+  end
+
   private
+  def collection_class
+    self.class.collection_class collection
+  end
+
   def defined_on_collection
-    (collection.public_methods
-     - platonic_collection.public_methods).
-     reject { |m| m.to_s.match /^(_|original_)/ }
+    (collection_class.public_methods -
+     platonic_collection.public_methods).
+     reject { |m| m.to_s.match /^(_|original_)/ }.
+     map { |m| m.to_s }
   end
 
   def platonic_collection

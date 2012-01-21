@@ -4,8 +4,10 @@ class NakedModel::Decorator::Proc
     self.curried = curried
   end
 
-  def as_json
-    raise NotImplementedError
+  def as_json(request)
+    {
+      :pending_arguments => "You're going to need some more arguments, partner"
+    }
   end
 
   def rel(relation)

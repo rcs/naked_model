@@ -36,9 +36,14 @@ class Artist < BaseSqlAr
   validates_length_of :name, :minimum => 1
   validates_uniqueness_of :name
 
-  def llamas
-    'truly rock'
+  def original_cd
+    cds.first
   end
+
+  def with_title(thing)
+    cds.where("title like ?", "%#{thing}%")
+  end
+
 end
 class Cd < BaseSqlAr
   belongs_to :artist

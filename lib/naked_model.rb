@@ -45,13 +45,8 @@ class NakedModel
     # Resolve the request to its end, catching errors thrown during the resolution
     begin
       resolved = request.chain.reduce(namespace) do |progress,fragment| 
-        $stderr.puts "Relating #{fragment} on #{progress}"
-        successor = progress.rel(fragment)
-        $stderr.puts "Successor is #{successor}"
-        request.decorate successor
+        request.decorate progress.rel(fragment)
       end
-
-      $stderr.puts "resolved: #{resolved}"
 
     rescue NakedModel::RecordNotFound
       return [404, {'Content-Type' => 'text/plain'}, ["Not found: #{request.request.url}"]]

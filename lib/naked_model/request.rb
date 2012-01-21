@@ -65,11 +65,10 @@ class NakedModel::Request
   end
 
   def full_path
-     request.base_url+request.script_name + request.path_info + path.join('/')
+     request.base_url+request.script_name + request.path_info + (request.path_info[-1,1] == '/' ? '' : '/' ) + path.join('/')
   end
 
   def add_path(fragment)
-    $stderr.puts "Path is #{path}, adding #{fragment}"
     self.class.new(
       :request => request,
       :chain => chain,

@@ -1,4 +1,20 @@
 class NakedModel::Decorator::MongoMapper::Collection
+  def self.collection_class(obj)
+    # Trivial case
+    if obj.is_a? Class
+      klass = obj
+    else
+      # obj.model from Plucky::Query, klass from MongoMapper::Plugins::Associations::Proxy
+      klass = (obj.model rescue nil) || (obj.klass rescue nil)
+    end
+
+    if klass < ::MongoMapper::Document
+      klass
+    else
+      nil
+    end
+  end
+
   attr_accessor :collection
   def initialize(collection)
     self.collection = collection
@@ -11,7 +27,7 @@ class NakedModel::Decorator::MongoMapper::Collection
         request.decorate(a).as_json(request.add_path(a.id))
       end,
       :links => [
-        defined_on_collection.map do |relation|
+        *defined_on_collection.map do |relation|
           {:rel => relation, :href => request.add_path(relation).full_path }
         end,
         {:rel => 'self', :href => request.full_path}
@@ -21,7 +37,8 @@ class NakedModel::Decorator::MongoMapper::Collection
 
   def rel(relation)
     if defined_on_collection.include? relation
-      collection.method(relation.to_sym).to_proc.curry[]
+      arity = collection_class.method(relation.to_sym).arity
+      Proc.new { |args| collection.__send__ relation.to_sym }.curry(arity)[]
     else
       res = collection.find(relation)
       raise NakedModel::RecordNotFound if res.nil?
@@ -40,11 +57,16 @@ class NakedModel::Decorator::MongoMapper::Collection
   end
 
 
+  def collection_class
+    self.class.collection_class collection
+  end
+
   private
   def defined_on_collection
-    (collection.public_methods -
+    (collection_class.public_methods -
      platonic_collection.public_methods).
-     reject { |m| m.to_s.match /^(_|original_)/ }
+     reject { |m| m.to_s.match /^(_|original_)/ }.
+     map { |m| m.to_s }
   end
 
   def platonic_collection
@@ -52,4 +74,6 @@ class NakedModel::Decorator::MongoMapper::Collection
     platonic.send :include, ::MongoMapper::Document
     platonic
   end
+
+
 end

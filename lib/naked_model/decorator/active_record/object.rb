@@ -9,6 +9,7 @@ class NakedModel::Decorator::ActiveRecord::Object
     links = relations.map { |relation|
       {:rel => relation, :href => request.add_path(relation).full_path}
     }
+    links << { :rel => 'self', :href => request.full_path }
     obj.as_json.merge :links => links
   end
 

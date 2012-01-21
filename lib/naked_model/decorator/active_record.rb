@@ -1,21 +1,27 @@
 require 'active_record'
 
 class NakedModel::Decorator::ActiveRecord
+  require_relative 'active_record/object'
+  require_relative 'active_record/collection'
+  require_relative 'curried'
   attr_accessor :models
 
   # Pull all the AR classes into our models hash
   def initialize
     self.models = Hash[
-      ActiveRecord::Base.descendants.map { |c|
+      ActiveRecord::Base.descendants.select(&:name).select { |c| !c.abstract_class }.map { |c|
         [c.name.tableize, c]
       }
     ]
   end
 
   # Return all the models as relations to this playground
-  def as_json
+  def as_json(request)
     {
-      :links => models.map { |k,v| {:rel => k, :href => [v.tableize.to_s] } }
+      :links => [
+        *models.map { |k,v| {:rel => k, :href => request.add_path(k).full_path } },
+        {:rel => 'self', :href => request.full_path}
+      ]
     }
   end
 
@@ -25,34 +31,19 @@ class NakedModel::Decorator::ActiveRecord
   end
 
   def decorate(obj)
-    if obj.class.ancestors & ActiveRecord::Base
+    if obj.class < ActiveRecord::Base
       NakedModel::Decorator::ActiveRecord::Object.new obj
     elsif collection? obj
       NakedModel::Decorator::ActiveRecord::Collection.new obj 
     elsif obj.is_a? Proc
-      NakedModel::Decorator::Curried.new obj
+      NakedModel::Decorator::Proc.new obj
     else
+      $stderr.puts "Couldn't decorate #{obj.inspect}"
       raise NakedModel::NoMethodError
     end
   end
 
-  def collection?
-    if obj.is_a? Class
-      klass = obj
-    elsif obj.is_a? ::ActiveRecord::Relation
-      klass = obj.klass
-    else
-      begin
-        klass = obj.proxy_association.reflection.klass
-      rescue NoMethodError
-        return nil
-      end
-    end
-
-    if klass.ancestors & ActiveRecord::Base
-      true
-    else
-      nil
-    end
+  def collection?(obj)
+    NakedModel::Decorator::ActiveRecord::Collection.collection_class obj 
   end
 end
