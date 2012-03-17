@@ -27,6 +27,8 @@ And run it.
 $ rackup
 ...
 $ curl localhost:9292/model_class/1
+```
+```javascript
 {
   "your_model": "goes here"
 }
@@ -87,6 +89,8 @@ representing the new resource.
 
 ```shell
 $ curl -s -d '{ "name": "kitties" }' localhost:9292/topics | pp_json
+```
+```javascript
 {
   "id": 1,
   "name": "kitties",
@@ -109,6 +113,8 @@ comments to it:
 
 ```shell
 $ curl -s -d '{ "comment": "I love kitties." }' localhost:9292/topics/1/comments | pp_json
+```
+```javascript
 {
   "comment": "I love kitties.",
   "created_at": "2011-12-31T11:58:19-08:00",
@@ -132,6 +138,8 @@ And let's see the results. Our topic:
 
 ```shell
 $ curl -s localhost:9292/topics/1 | pp_json
+```
+```javascript
 {
   "id": 1,
   "name": "kitties",
@@ -152,6 +160,8 @@ And the comments for it:
 
 ```shell
 $ curl -s localhost:9292/topics/1/comments | pp_json
+```
+```javascript
 [
   {
     "comment": "I love kitties.",
