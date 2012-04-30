@@ -1,3 +1,5 @@
+Note: Practicing README driven development. This README isn't quite implemented yet. Still a work in progress.
+
 # NakedModel
 You create awesome models, why bother with writing yet another passthrough controller or twelve?
 
